@@ -65,6 +65,29 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# ─── パスワード認証 ────────────────────────────────────────────
+def check_password():
+    """Streamlit Secrets の PASSWORD と照合。未設定なら認証スキップ。"""
+    correct = st.secrets.get("PASSWORD", "")
+    if not correct:
+        return True  # Secrets 未設定時はスキップ（ローカル開発用）
+
+    if st.session_state.get("authenticated"):
+        return True
+
+    st.title("🔐 CASATS — ログイン")
+    pwd = st.text_input("パスワード", type="password", placeholder="パスワードを入力...")
+    if st.button("ログイン", type="primary"):
+        if pwd == correct:
+            st.session_state["authenticated"] = True
+            st.rerun()
+        else:
+            st.error("パスワードが違います")
+    return False
+
+if not check_password():
+    st.stop()
+
 st.markdown("""
 <style>
   .buy-badge  { color:#00cc88; font-weight:bold; font-size:1.1em; }
