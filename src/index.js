@@ -52,17 +52,29 @@ async function main() {
     await DBInit.initialize();
     logger.info('✓ Database initialized\n');
 
-    // スケジューラー開始
-    logger.info('Starting trading scheduler...');
     const scheduler = new TradingScheduler();
+
+    // ── 一回実行モード（GitHub Actions / CI 向け）──────────────
+    // node src/index.js --run-trading : 売買分析を1回実行して終了
+    // node src/index.js --run-scan    : 銘柄選定を1回実行して終了
+    if (process.argv.includes('--run-trading') || process.argv.includes('--test')) {
+      logger.info('One-shot mode: Running trading once...\n');
+      await scheduler.executeTrading();
+      logger.info('✓ Trading execution complete. Exiting.');
+      process.exit(0);
+    }
+
+    if (process.argv.includes('--run-scan')) {
+      logger.info('One-shot mode: Running watchlist scan once...\n');
+      await scheduler.executeWatchlistScan();
+      logger.info('✓ Watchlist scan complete. Exiting.');
+      process.exit(0);
+    }
+
+    // ── 通常モード: スケジューラー常駐実行（ローカル開発用）──
+    logger.info('Starting trading scheduler...');
     const task = scheduler.start();
     logger.info('✓ Trading scheduler started\n');
-
-    // テスト実行オプション
-    if (process.argv.includes('--test')) {
-      logger.info('Test mode enabled. Running one test execution...\n');
-      await scheduler.manualExecute();
-    }
 
     // 永続実行
     logger.info('System ready. Press Ctrl+C to exit.\n');
@@ -71,14 +83,16 @@ async function main() {
     // Graceful shutdown
     process.on('SIGINT', () => {
       logger.info('\n\nShutting down gracefully...');
-      task.stop();
+      task.tradingTask?.stop();
+      task.scanTask?.stop();
       logger.info('✓ Scheduler stopped');
       process.exit(0);
     });
 
     process.on('SIGTERM', () => {
       logger.info('\n\nTerminating...');
-      task.stop();
+      task.tradingTask?.stop();
+      task.scanTask?.stop();
       logger.info('✓ Scheduler stopped');
       process.exit(0);
     });

@@ -1,9 +1,9 @@
-name: 自動株式売買ボット（毎日売買）
+name: 銘柄選定スキャン（月2回）
 
 on:
-  # 平日（月〜金）の大引け後 15:05 JST（UTC 6:05）に実行
+  # 毎月 1日・15日の 9:00 JST（UTC 0:00）に実行
   schedule:
-    - cron: '5 6 * * 1-5'   # UTC 6:05 = JST 15:05（月〜金）
+    - cron: '0 0 1,15 * *'   # UTC 0:00 = JST 9:00（1日・15日）
   # 手動実行ボタン
   workflow_dispatch:
     inputs:
@@ -16,7 +16,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  run-trading-bot:
+  run-watchlist-scan:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -33,32 +33,22 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run trading (one-shot)
+      - name: Run watchlist scan (one-shot)
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           TRADING_MODE: ${{ github.event.inputs.trading_mode || 'advisor' }}
           PORTFOLIO_VALUE: ${{ secrets.PORTFOLIO_VALUE || '1000000' }}
-          TRADE_LOT_SIZE: '1'
-          TARGET_ALLOCATION_PERCENT: '0.70'
-          MAX_POSITIONS: '5'
-          MAX_POSITION_PERCENT: '0.20'
-          MAX_RISK_PER_TRADE: '0.02'
-          MAX_DAILY_LOSS_PERCENT: '0.05'
-          STOP_LOSS_PERCENT: '0.05'
-          TAKE_PROFIT_PERCENT: '0.10'
-          CONFIDENCE_THRESHOLD: '0.60'
-          WATCHED_STOCKS: ${{ secrets.WATCHED_STOCKS || '0462,9536,6138,2978,4820,5195,2002,8308' }}
           LOG_LEVEL: 'info'
         run: |
           mkdir -p logs
-          node src/index.js --run-trading
+          node scan-watchlist.js
 
       - name: Upload logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: trading-logs-${{ github.run_id }}
+          name: watchlist-scan-logs-${{ github.run_id }}
           path: logs/
           if-no-files-found: ignore
           retention-days: 7
