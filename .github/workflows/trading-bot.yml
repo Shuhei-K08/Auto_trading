@@ -1,0 +1,77 @@
+name: 自動株式売買ボット
+
+on:
+  # 平日（月〜金）の朝 8:00 JST（UTC 23:00 前日）に実行
+  schedule:
+    - cron: '0 23 * * 0-4'   # UTC 23:00 = JST 08:00（日〜木 → 翌 月〜金）
+  # 手動実行ボタン
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: '実行モード (advisor / demo)'
+        required: false
+        default: 'advisor'
+
+jobs:
+  run-trading-bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      # ────────────────────────────────────────────
+      # 1. チェックアウト
+      # ────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ────────────────────────────────────────────
+      # 2. Node.js セットアップ
+      # ────────────────────────────────────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # ────────────────────────────────────────────
+      # 3. 依存パッケージインストール
+      # ────────────────────────────────────────────
+      - name: Install dependencies
+        run: npm ci
+
+      # ────────────────────────────────────────────
+      # 4. ボット実行
+      #    シークレットは GitHub → Settings → Secrets → Actions で設定
+      # ────────────────────────────────────────────
+      - name: Run trading bot
+        env:
+          # Anthropic
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # クラウドDB（Neon）
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          # 取引設定
+          TRADING_MODE: ${{ github.event.inputs.mode || 'advisor' }}
+          PORTFOLIO_VALUE: ${{ secrets.PORTFOLIO_VALUE || '10000' }}
+          TRADE_LOT_SIZE: '1'
+          TARGET_ALLOCATION_PERCENT: '0.70'
+          MAX_POSITIONS: '5'
+          MAX_POSITION_PERCENT: '0.20'
+          MAX_RISK_PER_TRADE: '0.02'
+          MAX_DAILY_LOSS_PERCENT: '0.05'
+          STOP_LOSS_PERCENT: '0.05'
+          TAKE_PROFIT_PERCENT: '0.10'
+          CONFIDENCE_THRESHOLD: '0.60'
+          WATCHED_STOCKS: ${{ secrets.WATCHED_STOCKS || '0462,9536,6138,2978,4820,5195,2002,8308' }}
+          LOG_LEVEL: 'info'
+        run: node src/index.js
+
+      # ────────────────────────────────────────────
+      # 5. ログをアーティファクトとして保存（7日間）
+      # ────────────────────────────────────────────
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trading-logs-${{ github.run_id }}
+          path: logs/
+          retention-days: 7

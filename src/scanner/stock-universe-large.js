@@ -1,0 +1,408 @@
+/**
+ * Stock Universe Large
+ * 東証プライム・スタンダード・グロース 約350銘柄
+ * JPX動的取得の失敗時フォールバック用スタティックリスト
+ *
+ * セクター構成:
+ *   自動車/電機/精密・半導体/IT・インターネット/通信/銀行/証券・保険・金融/商社
+ *   食品/小売/医薬品・バイオ/機械・重工/化学・素材/不動産/建設/エネルギー
+ *   鉄鋼・非鉄/ゲーム・エンタメ/サービス・人材/輸送・物流/ヘルスケア/グロース・新興
+ */
+
+export const STOCK_UNIVERSE_LARGE = [
+
+  // ━━━ 自動車・輸送機器 (14) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  { symbol: '7203', name: 'トヨタ自動車',           sector: '自動車' },
+  { symbol: '7267', name: 'ホンダ',                 sector: '自動車' },
+  { symbol: '7270', name: 'SUBARU',                 sector: '自動車' },
+  { symbol: '7201', name: '日産自動車',             sector: '自動車' },
+  { symbol: '7269', name: 'スズキ',                 sector: '自動車' },
+  { symbol: '7261', name: 'マツダ',                 sector: '自動車' },
+  { symbol: '7211', name: '三菱自動車工業',         sector: '自動車' },
+  { symbol: '7282', name: '豊田合成',               sector: '自動車' },
+  { symbol: '7259', name: 'アイシン',               sector: '自動車' },
+  { symbol: '7276', name: '小糸製作所',             sector: '自動車' },
+  { symbol: '7272', name: 'ヤマハ発動機',           sector: '自動車' },
+  { symbol: '7240', name: 'NOK',                   sector: '自動車' },
+  { symbol: '7278', name: 'エクセディ',             sector: '自動車' },
+  { symbol: '6902', name: 'デンソー',               sector: '自動車' },
+
+  // ━━━ 電機・エレクトロニクス (20) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  { symbol: '6758', name: 'ソニーグループ',         sector: '電機' },
+  { symbol: '6861', name: 'キーエンス',             sector: '電機' },
+  { symbol: '6954', name: 'ファナック',             sector: '電機' },
+  { symbol: '6752', name: 'パナソニック',           sector: '電機' },
+  { symbol: '6501', name: '日立製作所',             sector: '電機' },
+  { symbol: '6723', name: 'ルネサスエレクトロニクス', sector: '電機' },
+  { symbol: '6857', name: 'アドバンテスト',         sector: '電機' },
+  { symbol: '8035', name: '東京エレクトロン',       sector: '電機' },
+  { symbol: '6503', name: '三菱電機',               sector: '電機' },
+  { symbol: '6971', name: '京セラ',                 sector: '電機' },
+  { symbol: '6976', name: '太陽誘電',               sector: '電機' },
+  { symbol: '6762', name: 'TDK',                   sector: '電機' },
+  { symbol: '6594', name: 'ニデック',               sector: '電機' },
+  { symbol: '6841', name: '横河電機',               sector: '電機' },
+  { symbol: '6645', name: 'オムロン',               sector: '電機' },
+  { symbol: '6506', name: '安川電機',               sector: '電機' },
+  { symbol: '6701', name: 'NEC',                   sector: '電機' },
+  { symbol: '6702', name: '富士通',                 sector: '電機' },
+  { symbol: '7751', name: 'キヤノン',               sector: '電機' },
+  { symbol: '6474', name: '不二越',                 sector: '電機' },
+
+  // ━━━ 精密機器・半導体製造 (12) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  { symbol: '7731', name: 'ニコン',                 sector: '電機' },
+  { symbol: '7733', name: 'オリンパス',             sector: '電機' },
+  { symbol: '7741', name: 'HOYA',                  sector: '電機' },
+  { symbol: '6965', name: '浜松ホトニクス',         sector: '電機' },
+  { symbol: '6963', name: 'ローム',                 sector: '電機' },
+  { symbol: '6869', name: 'シスメックス',           sector: 'ヘルスケア' },
+  { symbol: '6103', name: 'オークマ',               sector: '機械' },
+  { symbol: '6201', name: '豊田自動織機',           sector: '機械' },
+  { symbol: '6472', name: 'NTN',                   sector: '機械' },
+  { symbol: '7735', name: 'SCREEN',                sector: '電機' },
+  { symbol: '6302', name: '住友重機械工業',         sector: '機械' },
+  { symbol: '6366', name: '千代田化工建設',         sector: '機械' },
+
+  // ━━━ IT・インターネット・ソフトウェア (30) ━━━━━━━━━━━━━━━━━━━━━
+  { symbol: '4307', name: '野村総合研究所',         sector: 'IT・通信' },
+  { symbol: '9613', name: 'NTTデータグループ',      sector: 'IT・通信' },
+  { symbol: '4704', name: 'トレンドマイクロ',       sector: 'IT・通信' },
+  { symbol: '3994', name: 'マネーフォワード',       sector: 'IT・通信' },
+  { symbol: '4776', name: 'サイボウズ',             sector: 'IT・通信' },
+  { symbol: '4684', name: 'オービック',             sector: 'IT・通信' },
+  { symbol: '4751', name: 'サイバーエージェント',   sector: 'IT・通信' },
+  { symbol: '2432', name: 'DeNA',                  sector: 'IT・通信' },
+  { symbol: '3632', name: 'グリー',                 sector: 'IT・通信' },
+  { symbol: '4385', name: 'メルカリ',               sector: 'IT・通信' },
+  { symbol: '4478', name: 'freee',                 sector: 'IT・通信' },
+  { symbol: '4443', name: 'Sansan',                sector: 'IT・通信' },
+  { symbol: '4436', name: 'ミンカブ・ジ・インフォノイド', sector: 'IT・通信' },
+  { symbol: '3726', name: 'フォーサイド',           sector: 'IT・通信' },
+  { symbol: '9719', name: 'SCSK',                  sector: 'IT・通信' },
+  { symbol: '3626', name: 'TIS',                   sector: 'IT・通信' },
+  { symbol: '4686', name: 'ジャストシステム',       sector: 'IT・通信' },
+  { symbol: '4709', name: 'IDホールディングス',     sector: 'IT・通信' },
+  { symbol: '6532', name: 'ベイカレント・コンサルティング', sector: 'IT・通信' },
+  { symbol: '4414', name: 'ジオコード',             sector: 'IT・通信' },
+  { symbol: '4382', name: 'HEROZ',                 sector: 'IT・通信' },
+  { symbol: '4448', name: 'Chatwork',              sector: 'IT・通信' },
+  { symbol: '4425', name: 'Kudan',                 sector: 'IT・通信' },
+  { symbol: '4348', name: 'インフォコム',           sector: 'IT・通信' },
+  { symbol: '3965', name: 'キャピタル・アセット・プランニング', sector: 'IT・通信' },
+  { symbol: '4369', name: 'トリケミカル研究所',     sector: 'IT・通信' },
+  { symbol: '4055', name: 'メドレー',               sector: 'IT・通信' },
+  { symbol: '4583', name: 'カイオム・バイオサイエンス', sector: 'IT・通信' },
+  { symbol: '3863', name: '日本製紙',               sector: 'IT・通信' },
+  { symbol: '4321', name: 'ケンエレファント',       sector: 'IT・通信' },
+
+  // ━━━ 通信 (8) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  { symbol: '9984', name: 'ソフトバンクグループ',   sector: 'IT・通信' },
+  { symbol: '9432', name: 'NTT',                   sector: 'IT・通信' },
+  { symbol: '9433', name: 'KDDI',                  sector: 'IT・通信' },
+  { symbol: '9434', name: 'ソフトバンク',           sector: 'IT・通信' },
+  { symbol: '4689', name: 'LINEヤフー',            sector: 'IT・通信' },
+  { symbol: '4755', name: '楽天グループ',           sector: 'IT・通信' },
+  { symbol: '9414', name: '日本BS放送',             sector: 'IT・通信' },
+  { symbol: '4726', name: 'ソフトバンク・テクノロジー', sector: 'IT・通信' },
+
+  // ━━━ 銀行 (14) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  { symbol: '8306', name: '三菱UFJフィナンシャル', sector: '銀行' },
+  { symbol: '8316', name: '三井住友フィナンシャル', sector: '銀行' },
+  { symbol: '8411', name: 'みずほフィナンシャル',   sector: '銀行' },
+  { symbol: '8309', name: '三井住友トラスト',       sector: '銀行' },
+  { symbol: '7186', name: 'コンコルディア',         sector: '銀行' },
+  { symbol: '8342', name: '東北銀行',               sector: '銀行' },
+  { symbol: '8354', name: 'ふくおかフィナンシャル', sector: '銀行' },
+  { symbol: '8355', name: '静岡銀行',               sector: '銀行' },
+  { symbol: '8304', name: '秋田銀行',               sector: '銀行' },
+  { symbol: '8379', name: '広島銀行',               sector: '銀行' },
+  { symbol: '8341', name: '七十七銀行',             sector: '銀行' },
+  { symbol: '8334', name: '群馬銀行',               sector: '銀行' },
+  { symbol: '8332', name: '横浜銀行',               sector: '銀行' },
+  { symbol: '8333', name: '常陽銀行',               sector: '銀行' },
+
+  // ━━━ 証券・保険・その他金融 (10) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  { symbol: '8604', name: '野村ホールディングス',   sector: '証券・保険' },
+  { symbol: '8725', name: 'MS＆ADインシュアランス', sector: '証券・保険' },
+  { symbol: '8750', name: '第一生命ホールディングス', sector: '証券・保険' },
+  { symbol: '8253', name: 'クレディセゾン',         sector: '証券・保険' },
+  { symbol: '8601', name: '大和証券グループ',       sector: '証券・保険' },
+  { symbol: '8630', name: 'SOMPOホールディングス', sector: '証券・保険' },
+  { symbol: '8766', name: '東京海上ホールディングス', sector: '証券・保険' },
+  { symbol: '7187', name: 'ジェイリース',           sector: '証券・保険' },
+  { symbol: '8252', name: '丸井グループ',           sector: '証券・保険' },
+  { symbol: '8572', name: 'アコム',                 sector: '証券・保険' },
+
+  // ━━━ 商社 (10) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  { symbol: '8058', name: '三菱商事',               sector: '商社' },
+  { symbol: '8031', name: '三井物産',               sector: '商社' },
+  { symbol: '8001', name: '伊藤忠商事',             sector: '商社' },
+  { symbol: '8002', name: '丸紅',                   sector: '商社' },
+  { symbol: '8053', name: '住友商事',               sector: '商社' },
+  { symbol: '8015', name: '豊田通商',               sector: '商社' },
+  { symbol: '8014', name: '蝶理',                   sector: '商社' },
+  { symbol: '8016', name: 'オンワードホールディングス', sector: '商社' },
+  { symbol: '8022', name: '三洋貿易',               sector: '商社' },
+  { symbol: '9768', name: 'いであ',                 sector: '商社' },
+
+  // ━━━ 食品・飲料・農業 (18) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  { symbol: '2802', name: '味の素',                 sector: '食品' },
+  { symbol: '2503', name: 'キリンホールディングス', sector: '食品' },
+  { symbol: '2502', name: 'アサヒグループ',         sector: '食品' },
+  { symbol: '2282', name: '日本ハム',               sector: '食品' },
+  { symbol: '2801', name: 'キッコーマン',           sector: '食品' },
+  { symbol: '2267', name: '雪印メグミルク',         sector: '食品' },
+  { symbol: '2914', name: 'JT',                    sector: '食品' },
+  { symbol: '2264', name: '森永乳業',               sector: '食品' },
+  { symbol: '2270', name: '雪印メグミルク',         sector: '食品' },
+  { symbol: '2531', name: '宝ホールディングス',     sector: '食品' },
+  { symbol: '2269', name: '明治ホールディングス',   sector: '食品' },
+  { symbol: '2003', name: '日東富士製粉',           sector: '食品' },
+  { symbol: '2215', name: '第一屋製パン',           sector: '食品' },
+  { symbol: '2261', name: '明治HD',                sector: '食品' },
+  { symbol: '2281', name: 'プリマハム',             sector: '食品' },
+  { symbol: '2897', name: '日清食品ホールディングス', sector: '食品' },
+  { symbol: '2810', name: 'ハウス食品グループ',     sector: '食品' },
+  { symbol: '2871', name: 'ニチレイ',               sector: '食品' },
+
+  // ━━━ 小売・流通 (16) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  { symbol: '3382', name: 'セブン＆アイ',           sector: '小売' },
+  { symbol: '8267', name: 'イオン',                 sector: '小売' },
+  { symbol: '9983', name: 'ファーストリテイリング', sector: '小売' },
+  { symbol: '3099', name: '三越伊勢丹',             sector: '小売' },
+  { symbol: '2651', name: 'ローソン',               sector: '小売' },
+  { symbol: '3086', name: 'Jフロントリテイリング', sector: '小売' },
+  { symbol: '3092', name: 'ZOZO',                  sector: '小売' },
+  { symbol: '2678', name: 'アスクル',               sector: '小売' },
+  { symbol: '7532', name: 'パン・パシフィック',     sector: '小売' },
+  { symbol: '3197', name: 'すかいらーく',           sector: '小売' },
+  { symbol: '3337', name: 'サンエー',               sector: '小売' },
+  { symbol: '9831', name: 'ヤマダホールディングス', sector: '小売' },
+  { symbol: '2670', name: 'ABCマート',             sector: '小売' },
+  { symbol: '3086', name: 'Jフロントリテイリング', sector: '小売' },
+  { symbol: '2659', name: 'サンエー',               sector: '小売' },
+  { symbol: '3391', name: 'ツルハホールディングス', sector: '小売' },
+
+  // ━━━ 医薬品・バイオ・医療 (22) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  { symbol: '4502', name: '武田薬品工業',           sector: '医薬品' },
+  { symbol: '4519', name: '中外製薬',               sector: '医薬品' },
+  { symbol: '4523', name: 'エーザイ',               sector: '医薬品' },
+  { symbol: '4568', name: '第一三共',               sector: '医薬品' },
+  { symbol: '4507', name: '塩野義製薬',             sector: '医薬品' },
+  { symbol: '4021', name: '日産化学',               sector: '医薬品' },
+  { symbol: '4578', name: '大塚ホールディングス',   sector: '医薬品' },
+  { symbol: '4151', name: '協和キリン',             sector: '医薬品' },
+  { symbol: '4527', name: 'ロート製薬',             sector: '医薬品' },
+  { symbol: '4516', name: '日本新薬',               sector: '医薬品' },
+  { symbol: '4506', name: '大日本住友製薬',         sector: '医薬品' },
+  { symbol: '4530', name: '久光製薬',               sector: '医薬品' },
+  { symbol: '4543', name: 'テルモ',                 sector: '医薬品' },
+  { symbol: '4588', name: 'オンコリスバイオファーマ', sector: '医薬品' },
+  { symbol: '4565', name: 'そーせいグループ',       sector: '医薬品' },
+  { symbol: '4571', name: 'NANO MRNA',             sector: '医薬品' },
+  { symbol: '4563', name: 'アンジェス',             sector: '医薬品' },
+  { symbol: '4536', name: '参天製薬',               sector: '医薬品' },
+  { symbol: '4091', name: '大陽日酸',               sector: '医薬品' },
+  { symbol: '4555', name: '沢井製薬',               sector: '医薬品' },
+  { symbol: '4549', name: '栄研化学',               sector: '医薬品' },
+  { symbol: '4547', name: 'キッセイ薬品工業',       sector: '医薬品' },
+
+  // ━━━ 機械・重工業 (16) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  { symbol: '6301', name: 'コマツ',                 sector: '機械' },
+  { symbol: '6326', name: 'クボタ',                 sector: '機械' },
+  { symbol: '7011', name: '三菱重工業',             sector: '機械' },
+  { symbol: '7013', name: 'IHI',                   sector: '機械' },
+  { symbol: '6367', name: 'ダイキン工業',           sector: '機械' },
+  { symbol: '6273', name: 'SMC',                   sector: '機械' },
+  { symbol: '6361', name: '荏原製作所',             sector: '機械' },
+  { symbol: '7012', name: '川崎重工業',             sector: '機械' },
+  { symbol: '6498', name: 'キッツ',                 sector: '機械' },
+  { symbol: '6460', name: 'セガサミーホールディングス', sector: 'エンタメ' },
+  { symbol: '6383', name: 'ダイフク',               sector: '機械' },
+  { symbol: '6471', name: '日本精工',               sector: '機械' },
+  { symbol: '6481', name: 'THK',                   sector: '機械' },
+  { symbol: '6200', name: 'インソース',             sector: '機械' },
+  { symbol: '6269', name: '三菱ロジスネクスト',     sector: '機械' },
+  { symbol: '6480', name: '日本トムソン',           sector: '機械' },
+
+  // ━━━ 化学・素材・ゴム (16) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  { symbol: '4063', name: '信越化学工業',           sector: '化学' },
+  { symbol: '4188', name: '三菱ケミカル',           sector: '化学' },
+  { symbol: '3407', name: '旭化成',                 sector: '化学' },
+  { symbol: '4183', name: '三井化学',               sector: '化学' },
+  { symbol: '4042', name: '東ソー',                 sector: '化学' },
+  { symbol: '4004', name: '昭和電工',               sector: '化学' },
+  { symbol: '4005', name: '住友化学',               sector: '化学' },
+  { symbol: '4208', name: '宇部興産',               sector: '化学' },
+  { symbol: '4452', name: '花王',                   sector: '化学' },
+  { symbol: '4911', name: '資生堂',                 sector: '化学' },
+  { symbol: '4901', name: '富士フイルム',           sector: '化学' },
+  { symbol: '4205', name: '日本ゼオン',             sector: '化学' },
+  { symbol: '4118', name: 'カネカ',                 sector: '化学' },
+  { symbol: '4275', name: 'カーリットホールディングス', sector: '化学' },
+  { symbol: '4045', name: '東亞合成',               sector: '化学' },
+  { symbol: '3861', name: '王子ホールディングス',   sector: '化学' },
+
+  // ━━━ 不動産 (10) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  { symbol: '8801', name: '三井不動産',             sector: '不動産' },
+  { symbol: '8802', name: '三菱地所',               sector: '不動産' },
+  { symbol: '3003', name: 'ヒューリック',           sector: '不動産' },
+  { symbol: '8830', name: '住友不動産',             sector: '不動産' },
+  { symbol: '8804', name: '東京建物',               sector: '不動産' },
+  { symbol: '8818', name: 'ケイアイスター不動産',   sector: '不動産' },
+  { symbol: '8905', name: 'イオンモール',           sector: '不動産' },
+  { symbol: '3231', name: '野村不動産ホールディングス', sector: '不動産' },
+  { symbol: '3289', name: '東急不動産ホールディングス', sector: '不動産' },
+  { symbol: '3240', name: '野村不動産マスターファンド投資法人', sector: '不動産' },
+
+  // ━━━ 建設・インフラ (10) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  { symbol: '1803', name: '清水建設',               sector: '建設' },
+  { symbol: '1801', name: '大成建設',               sector: '建設' },
+  { symbol: '1802', name: '大林組',                 sector: '建設' },
+  { symbol: '1721', name: 'コムシスホールディングス', sector: '建設' },
+  { symbol: '1812', name: '鹿島',                   sector: '建設' },
+  { symbol: '1928', name: '積水ハウス',             sector: '建設' },
+  { symbol: '1720', name: '東急建設',               sector: '建設' },
+  { symbol: '1929', name: '日特建設',               sector: '建設' },
+  { symbol: '1925', name: '大和ハウス工業',         sector: '建設' },
+  { symbol: '1808', name: '長谷工コーポレーション', sector: '建設' },
+
+  // ━━━ エネルギー・電力・ガス (10) ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  { symbol: '5020', name: 'ENEOSホールディングス', sector: 'エネルギー' },
+  { symbol: '5019', name: '出光興産',               sector: 'エネルギー' },
+  { symbol: '9531', name: '東京ガス',               sector: 'エネルギー' },
+  { symbol: '9503', name: '関西電力',               sector: 'エネルギー' },
+  { symbol: '9502', name: '中部電力',               sector: 'エネルギー' },
+  { symbol: '9504', name: '中国電力',               sector: 'エネルギー' },
+  { symbol: '9501', name: '東京電力',               sector: 'エネルギー' },
+  { symbol: '9508', name: '九州電力',               sector: 'エネルギー' },
+  { symbol: '9532', name: '大阪ガス',               sector: 'エネルギー' },
+  { symbol: '1605', name: '国際石油開発帝石',       sector: 'エネルギー' },
+
+  // ━━━ 鉄鋼・非鉄金属・資源 (10) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  { symbol: '5401', name: '日本製鉄',               sector: '鉄鋼' },
+  { symbol: '5406', name: '神戸製鋼所',             sector: '鉄鋼' },
+  { symbol: '5713', name: '住友金属鉱山',           sector: '鉄鋼' },
+  { symbol: '5802', name: '住友電気工業',           sector: '鉄鋼' },
+  { symbol: '5411', name: 'ジェイ エフ イー ホールディングス', sector: '鉄鋼' },
+  { symbol: '5701', name: '日本軽金属ホールディングス', sector: '鉄鋼' },
+  { symbol: '5707', name: '東邦亜鉛',               sector: '鉄鋼' },
+  { symbol: '5463', name: '丸一鋼管',               sector: '鉄鋼' },
+  { symbol: '5471', name: '大同特殊鋼',             sector: '鉄鋼' },
+  { symbol: '5214', name: '日本電気硝子',           sector: '化学' },
+
+  // ━━━ ゲーム・エンタメ・メディア (14) ━━━━━━━━━━━━━━━━━━━━━━━
+  { symbol: '9684', name: 'スクウェア・エニックス', sector: 'エンタメ' },
+  { symbol: '9697', name: 'カプコン',               sector: 'エンタメ' },
+  { symbol: '7974', name: '任天堂',                 sector: 'エンタメ' },
+  { symbol: '9766', name: 'コナミ',                 sector: 'エンタメ' },
+  { symbol: '3635', name: 'コロプラ',               sector: 'エンタメ' },
+  { symbol: '7832', name: 'バンダイナムコ',         sector: 'エンタメ' },
+  { symbol: '9601', name: '松竹',                   sector: 'エンタメ' },
+  { symbol: '9602', name: '東宝',                   sector: 'エンタメ' },
+  { symbol: '4676', name: 'フジ・メディア',         sector: 'エンタメ' },
+  { symbol: '4680', name: 'ラウンドワン',           sector: 'エンタメ' },
+  { symbol: '3656', name: 'KLab',                  sector: 'エンタメ' },
+  { symbol: '3759', name: 'ガイアホールディングス', sector: 'エンタメ' },
+  { symbol: '3765', name: 'ガンホー',               sector: 'エンタメ' },
+  { symbol: '3659', name: 'ネクソン',               sector: 'エンタメ' },
+
+  // ━━━ サービス・人材・広告 (16) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  { symbol: '4768', name: '大塚商会',               sector: 'サービス' },
+  { symbol: '4502', name: '武田薬品工業',           sector: '医薬品' },
+  { symbol: '9681', name: '東京ドーム',             sector: 'サービス' },
+  { symbol: '2768', name: '双日',                   sector: '商社' },
+  { symbol: '6178', name: '日本郵政',               sector: 'サービス' },
+  { symbol: '4816', name: '東映アニメーション',     sector: 'エンタメ' },
+  { symbol: '9409', name: 'テレビ朝日',             sector: 'エンタメ' },
+  { symbol: '9404', name: '日本テレビ',             sector: 'エンタメ' },
+  { symbol: '4327', name: '日本エス・エイチ・エル', sector: 'サービス' },
+  { symbol: '2127', name: '日本M&Aセンター',        sector: 'サービス' },
+  { symbol: '6098', name: 'リクルートホールディングス', sector: 'サービス' },
+  { symbol: '2124', name: 'ジェイエイシーリクルートメント', sector: 'サービス' },
+  { symbol: '2181', name: 'パーソルホールディングス', sector: 'サービス' },
+  { symbol: '4319', name: 'タックスコム',           sector: 'サービス' },
+  { symbol: '2413', name: 'エムスリー',             sector: 'サービス' },
+  { symbol: '6619', name: 'ダブル・スコープ',       sector: 'サービス' },
+
+  // ━━━ 輸送・物流・航空・鉄道 (12) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  { symbol: '9064', name: 'ヤマトホールディングス', sector: '物流' },
+  { symbol: '9062', name: '日本通運',               sector: '物流' },
+  { symbol: '9022', name: 'JR東海',                sector: '物流' },
+  { symbol: '9020', name: 'JR東日本',              sector: '物流' },
+  { symbol: '9021', name: 'JR西日本',              sector: '物流' },
+  { symbol: '9005', name: '東急',                   sector: '物流' },
+  { symbol: '9001', name: '東武鉄道',               sector: '物流' },
+  { symbol: '9008', name: '京王電鉄',               sector: '物流' },
+  { symbol: '9009', name: '京成電鉄',               sector: '物流' },
+  { symbol: '9143', name: 'SGホールディングス',     sector: '物流' },
+  { symbol: '9104', name: '商船三井',               sector: '物流' },
+  { symbol: '9101', name: '日本郵船',               sector: '物流' },
+
+  // ━━━ ヘルスケア・医療機器 (10) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  { symbol: '7741', name: 'HOYA',                  sector: 'ヘルスケア' },
+  { symbol: '4543', name: 'テルモ',                 sector: 'ヘルスケア' },
+  { symbol: '6869', name: 'シスメックス',           sector: 'ヘルスケア' },
+  { symbol: '7762', name: 'シチズン時計',           sector: 'ヘルスケア' },
+  { symbol: '6849', name: '日本光電',               sector: 'ヘルスケア' },
+  { symbol: '4540', name: 'ツムラ',                 sector: 'ヘルスケア' },
+  { symbol: '3513', name: '共和レザー',             sector: 'ヘルスケア' },
+  { symbol: '4977', name: '新田ゼラチン',           sector: 'ヘルスケア' },
+  { symbol: '2413', name: 'エムスリー',             sector: 'ヘルスケア' },
+  { symbol: '7707', name: 'プレシジョン・システム・サイエンス', sector: 'ヘルスケア' },
+
+  // ━━━ グロース・新興・スタートアップ (30) ━━━━━━━━━━━━━━━━━━━━━━
+  { symbol: '4385', name: 'メルカリ',               sector: 'グロース' },
+  { symbol: '3697', name: 'SHIFT',                 sector: 'グロース' },
+  { symbol: '4478', name: 'freee',                 sector: 'グロース' },
+  { symbol: '4443', name: 'Sansan',                sector: 'グロース' },
+  { symbol: '3906', name: 'PLAID',                 sector: 'グロース' },
+  { symbol: '4480', name: 'メドレー',               sector: 'グロース' },
+  { symbol: '4382', name: 'HEROZ',                 sector: 'グロース' },
+  { symbol: '4423', name: 'アルテリア・ネットワークス', sector: 'グロース' },
+  { symbol: '4436', name: 'ミンカブ',               sector: 'グロース' },
+  { symbol: '4448', name: 'Chatwork',              sector: 'グロース' },
+  { symbol: '7069', name: 'サイバー・バズ',         sector: 'グロース' },
+  { symbol: '4934', name: 'プレミアアンチエイジング', sector: 'グロース' },
+  { symbol: '6031', name: 'サイジニア',             sector: 'グロース' },
+  { symbol: '4053', name: 'Sun Asterisk',          sector: 'グロース' },
+  { symbol: '4260', name: 'Finatext',              sector: 'グロース' },
+  { symbol: '4168', name: 'ヤプリ',                 sector: 'グロース' },
+  { symbol: '4011', name: 'ヘッドウォータース',     sector: 'グロース' },
+  { symbol: '4071', name: 'プラスアルファ・コンサルティング', sector: 'グロース' },
+  { symbol: '4074', name: 'Appier Group',          sector: 'グロース' },
+  { symbol: '4493', name: 'サイバーセキュリティクラウド', sector: 'グロース' },
+  { symbol: '4051', name: 'GMOフィナンシャルゲート', sector: 'グロース' },
+  { symbol: '4485', name: 'JTOWER',                sector: 'グロース' },
+  { symbol: '4370', name: 'スペースマーケット',     sector: 'グロース' },
+  { symbol: '7098', name: 'コパ・コーポレーション', sector: 'グロース' },
+  { symbol: '4052', name: 'フィーチャ',             sector: 'グロース' },
+  { symbol: '4487', name: 'スペースフィールド',     sector: 'グロース' },
+  { symbol: '4478', name: 'freee',                 sector: 'グロース' },
+  { symbol: '4385', name: 'メルカリ',               sector: 'グロース' },
+  { symbol: '7741', name: 'HOYA',                  sector: 'グロース' },
+  { symbol: '3696', name: 'セレス',                 sector: 'グロース' },
+];
+
+// 重複を除去（symbolで一意化）
+const seen = new Set();
+export const STOCK_UNIVERSE_LARGE_DEDUPED = STOCK_UNIVERSE_LARGE.filter(s => {
+  if (seen.has(s.symbol)) return false;
+  seen.add(s.symbol);
+  return true;
+});
+
+/** ユニバース全体の銘柄数 */
+export const LARGE_UNIVERSE_SIZE = STOCK_UNIVERSE_LARGE_DEDUPED.length;
+
+/** セクター一覧を取得 */
+export function getLargeSectors() {
+  return [...new Set(STOCK_UNIVERSE_LARGE_DEDUPED.map(s => s.sector))];
+}
+
+/** セクター別銘柄を取得 */
+export function getLargeStocksBySector(sector) {
+  return STOCK_UNIVERSE_LARGE_DEDUPED.filter(s => s.sector === sector);
+}
+
+export default STOCK_UNIVERSE_LARGE_DEDUPED;

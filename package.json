@@ -1,0 +1,41 @@
+{
+  "name": "claude-autotrade",
+  "version": "3.0.0",
+  "description": "Claude AI Stock Auto Trading System - 日本株スイングトレード自動売買システム",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "demo": "node demo-cycle.js",
+    "demo:report": "node demo-cycle.js --report",
+    "test": "node --test",
+    "migrate": "node src/database/migrate.js",
+    "monthly-report": "node src/utils/monthly-report.js"
+  },
+  "keywords": [
+    "trading",
+    "stock",
+    "automation",
+    "claude",
+    "ai"
+  ],
+  "author": "Shuhei Kubo",
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.24.0",
+    "axios": "^1.6.0",
+    "dotenv": "^16.0.0",
+    "node-cron": "^3.0.0",
+    "pg": "^8.11.0",
+    "sqlite3": "^5.1.6",
+    "winston": "^3.10.0",
+    "yahoo-finance2": "^2.11.0"
+  },
+  "optionalDependencies": {
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  }
+}
