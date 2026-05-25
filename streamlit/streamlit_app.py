@@ -581,30 +581,6 @@ elif page == "⚙️ 設定":
 
     st.divider()
 
-    # ── メール設定 ────────────────────────────────────────────
-    with st.container(border=True):
-        st.subheader("📧 メール通知設定")
-        st.caption("GitHub Actions Secrets に登録することで毎朝メールが届きます。")
-
-        st.markdown("""
-**登録が必要な Secrets:**
-
-| Secret 名 | 内容 |
-|---|---|
-| `EMAIL_FROM` | 送信元 Gmail アドレス |
-| `EMAIL_PASSWORD` | Gmail アプリパスワード（16文字）|
-| `EMAIL_TO` | 送信先メールアドレス |
-
-**Gmail アプリパスワードの取得方法:**
-1. https://myaccount.google.com/security を開く
-2. 「2段階認証」を有効にする
-3. 「アプリパスワード」→「メール」を選択して16文字のパスワードを生成
-
-👉 [GitHub Secrets を設定する](https://github.com/Shuhei-K08/Auto_trading/settings/secrets/actions)
-""")
-
-    st.divider()
-
     # ── 取引設定 ──────────────────────────────────────────────
     with st.container(border=True):
         st.subheader("⚙️ 取引設定")

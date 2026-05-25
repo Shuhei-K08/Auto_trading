@@ -9,7 +9,6 @@ import TradingEngine from '../engine/trading-engine.js';
 import StockScanner from '../scanner/stock-scanner.js';
 import WatchlistManager from '../scanner/watchlist-manager.js';
 import DBInit from '../database/db-init.js';
-import { sendDailyReport } from '../utils/emailer.js';
 
 class TradingScheduler {
   constructor() {
@@ -62,18 +61,7 @@ class TradingScheduler {
 
       const result = await this.engine.runDailyTrading();
 
-      // メール通知
-      try {
-        const repo = this.engine.repository;
-        const portfolio     = await repo.getLatestPortfolio();
-        const openPositions = await repo.getOpenPositions();
-        const recommendations = result?.recommendations ?? result?.results ?? [];
-        await sendDailyReport(recommendations, portfolio, openPositions);
-      } catch (emailErr) {
-        logger.warn(`[Emailer] メール通知失敗（取引は正常完了）: ${emailErr.message}`);
-      }
-
-      logger.info('\n╔════════════════════════════════════════╗');
+logger.info('\n╔════════════════════════════════════════╗');
       logger.info('║  Daily Trading Completed Successfully ║');
       logger.info('╚════════════════════════════════════════╝\n');
 
