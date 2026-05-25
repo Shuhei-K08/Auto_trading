@@ -155,11 +155,16 @@ class StockScanner {
       ?? config.trading.portfolioValue
       ?? 1_000_000;
 
-    const sample = this.sampleUniverse(universe, sampleSize);
+    // ── 0xxx コードを除外 ──────────────────────────────────────────
+    // 2022年以降の新規IPO割当コード。Yahoo Finance / Stooq が未対応または
+    // 上場直後で履歴データが不足しており、全件データ取得失敗になるため除外。
+    const scannable = universe.filter(s => !/^0\d{3}$/.test(s.symbol));
+
+    const sample = this.sampleUniverse(scannable, sampleSize);
 
     logger.info(`\n${'='.repeat(55)}`);
     logger.info('Stock Universe Scan Started');
-    logger.info(`Full universe:  ${universe.length} 銘柄`);
+    logger.info(`Full universe:  ${universe.length} 銘柄 (0xxx除外後: ${scannable.length} 銘柄)`);
     logger.info(`This scan:      ${sample.length} 銘柄をランダムサンプリング`);
     logger.info(`Available cash: ¥${availableCash.toLocaleString('ja-JP')}`);
     logger.info(`Lot price cap:  ¥${(availableCash * SCAN_CONFIG.maxSingleLotRatio).toLocaleString('ja-JP')} (${SCAN_CONFIG.maxSingleLotRatio * 100}%)`);

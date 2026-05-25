@@ -5,11 +5,17 @@
 
 import logger from '../utils/logger.js';
 import TradeRepository from '../database/trade-repository.js';
+import NeonRepository from '../database/neon-repository.js';
 import config from '../config.js';
+
+/** DATABASE_URL の有無で使用 DB を切り替え */
+function createRepository() {
+  return process.env.DATABASE_URL ? new NeonRepository() : new TradeRepository();
+}
 
 class CapitalManager {
   constructor() {
-    this.repository = new TradeRepository();
+    this.repository = createRepository();
     this.currentPortfolio = null;
   }
 
@@ -20,31 +26,54 @@ class CapitalManager {
     try {
       // DB から最新のポートフォリオ情報を取得
       const existing = await this.repository.getLatestPortfolio();
+      const configCapital = config.trading.portfolioValue;
 
       if (existing) {
-        // DB は snake_case で返すので camelCase に正規化する
-        this.currentPortfolio = this.normalizeRow(existing);
-        logger.info(`Portfolio loaded from DB: ¥${this.currentPortfolio.currentCapital}`);
+        const dbInitial = existing.initial_capital ?? existing.initialCapital ?? 0;
+
+        // PORTFOLIO_VALUE が変更されていたらリセット
+        if (dbInitial !== configCapital) {
+          logger.warn(
+            `PORTFOLIO_VALUE 変更を検知: DB=¥${dbInitial} → Config=¥${configCapital}。` +
+            `ポートフォリオをリセットします。`
+          );
+          this.currentPortfolio = {
+            date: new Date().toISOString().split('T')[0],
+            initialCapital:   configCapital,
+            currentCapital:   configCapital,
+            availableCash:    configCapital,
+            investedStocks:   0,
+            deposits:         0,
+            withdrawals:      0,
+            totalGains:       0,
+            monthlyGains:     0,
+            pendingDeposits:  0,
+            pendingPurchases: 0,
+          };
+          await this.updatePortfolio(this.currentPortfolio);
+          logger.info(`Portfolio reset: ¥${configCapital}`);
+        } else {
+          // DB は snake_case で返すので camelCase に正規化する
+          this.currentPortfolio = this.normalizeRow(existing);
+          logger.info(`Portfolio loaded from DB: ¥${this.currentPortfolio.currentCapital}`);
+        }
       } else {
         // 初回時は .env から初期値を読み込む
-        const initialCapital = config.trading.portfolioValue;
-
         this.currentPortfolio = {
           date: new Date().toISOString().split('T')[0],
-          initialCapital,
-          currentCapital: initialCapital,
-          availableCash: initialCapital,
-          investedStocks: 0,
-          deposits: 0,
-          withdrawals: 0,
-          totalGains: 0,
-          monthlyGains: 0,
-          pendingDeposits: 0,
+          initialCapital:   configCapital,
+          currentCapital:   configCapital,
+          availableCash:    configCapital,
+          investedStocks:   0,
+          deposits:         0,
+          withdrawals:      0,
+          totalGains:       0,
+          monthlyGains:     0,
+          pendingDeposits:  0,
           pendingPurchases: 0,
         };
-
         await this.updatePortfolio(this.currentPortfolio);
-        logger.info(`Portfolio initialized: ¥${initialCapital}`);
+        logger.info(`Portfolio initialized: ¥${configCapital}`);
       }
 
       return this.currentPortfolio;

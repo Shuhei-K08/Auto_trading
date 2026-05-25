@@ -201,6 +201,9 @@ class JpxUniverseFetcher {
       const code = String(rawCode).replace(/\D/g, '').padStart(4, '0').slice(-4);
       if (!/^\d{4}$/.test(code)) continue;
 
+      // 0xxx コード（2022年以降の新規IPO割当）は Yahoo Finance / Stooq 未対応のため除外
+      if (/^0\d{3}$/.test(code)) continue;
+
       const market = String(row['市場・商品区分'] ?? row['市場区分'] ?? '');
       if (!TARGET_MARKETS.some(m => market.includes(m))) continue;
 

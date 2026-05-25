@@ -18,8 +18,14 @@ import MultiPositionManager from './multi-position-manager.js';
 import RiskManager from './risk-manager.js';
 import Executor from './executor.js';
 import TradeRepository from '../database/trade-repository.js';
+import NeonRepository from '../database/neon-repository.js';
 import WatchlistManager from '../scanner/watchlist-manager.js';
 import config from '../config.js';
+
+/** DATABASE_URL の有無で使用 DB を切り替え */
+function createRepository() {
+  return process.env.DATABASE_URL ? new NeonRepository() : new TradeRepository();
+}
 
 class TradingEngine {
   constructor() {
@@ -31,7 +37,7 @@ class TradingEngine {
     this.multiPositionManager = new MultiPositionManager();
     this.riskManager = new RiskManager(this.capitalManager);
     this.executor = new Executor();
-    this.repository = new TradeRepository();
+    this.repository = createRepository();
     this.watchlistManager = new WatchlistManager();
   }
 

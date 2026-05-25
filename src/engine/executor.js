@@ -9,12 +9,18 @@
 
 import logger from '../utils/logger.js';
 import TradeRepository from '../database/trade-repository.js';
+import NeonRepository from '../database/neon-repository.js';
 import config from '../config.js';
 import { ExecutionError } from '../utils/errors.js';
 
+/** DATABASE_URL の有無で使用 DB を切り替え */
+function createRepository() {
+  return process.env.DATABASE_URL ? new NeonRepository() : new TradeRepository();
+}
+
 class Executor {
   constructor() {
-    this.repository = new TradeRepository();
+    this.repository = createRepository();
     this.mode = config.trading.mode;
     this._rakuten = null; // 遅延ロード
   }
