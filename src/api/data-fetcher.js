@@ -148,37 +148,46 @@ class DataFetcher {
     const end   = new Date();
     const start = new Date(end.getTime() - 75 * 24 * 60 * 60 * 1000); // 75日
 
-    // ── ① Yahoo を crumb 不要で直接フェッチ（最も新鮮 — 終値含む） ──
     let currentPrice = null;
     let quoteData = null;
+    let priceSource = null;
+
+    // ── ① yahoo-finance2 quote API（最優先 — regularMarketPrice が最も正確） ──
     try {
-      const direct = await this._fetchYahooDirect(yahooSymbol);
-      if (direct?.price) {
-        currentPrice = direct.price;
-        quoteData    = direct.meta;
-        logger.debug(`  [yahoo-direct] ${symbol} (${yahooSymbol}): ¥${currentPrice.toFixed(0)} (state:${direct.meta?.marketState})`);
+      quoteData = await yahooFinance.quote(yahooSymbol);
+      const p = quoteData.regularMarketPrice
+        ?? quoteData.postMarketPrice
+        ?? quoteData.preMarketPrice
+        ?? null;
+      if (p && p > 0) {
+        currentPrice = p;
+        const state = quoteData.marketState ?? '不明';
+        const stateLabel = state === 'REGULAR' ? '取引中' : state === 'CLOSED' ? '終値' : state === 'POST' ? '時間外' : state;
+        priceSource = `quote API [${stateLabel}]`;
+        logger.info(`  💹 ${symbol} 株価取得: ¥${currentPrice.toFixed(0)} （${priceSource}）`);
       }
     } catch (e) {
-      logger.debug(`  [yahoo-direct] ${yahooSymbol} failed: ${e.message}`);
+      logger.debug(`  [yf2-quote] ${yahooSymbol} failed: ${e.message}`);
     }
 
-    // ── ① -b yahoo-finance2 ライブラリ経由（crumb 必要） ─────────
+    // ── ② チャート直接フェッチ（価格が取れなかった場合のフォールバック） ──
     if (!currentPrice) {
       try {
-        quoteData = await yahooFinance.quote(yahooSymbol);
-        currentPrice = quoteData.regularMarketPrice
-          ?? quoteData.postMarketPrice
-          ?? quoteData.preMarketPrice
-          ?? null;
-        if (currentPrice) {
-          logger.debug(`  [yf2-quote] ${symbol} (${yahooSymbol}): ¥${currentPrice.toFixed(0)}`);
+        const direct = await this._fetchYahooDirect(yahooSymbol);
+        if (direct?.price) {
+          currentPrice = direct.price;
+          if (!quoteData) quoteData = direct.meta;
+          const state = direct.meta?.marketState ?? '不明';
+          const stateLabel = state === 'REGULAR' ? '取引中' : state === 'CLOSED' ? '終値' : state;
+          priceSource = `チャートAPI [${stateLabel}]`;
+          logger.info(`  💹 ${symbol} 株価取得: ¥${currentPrice.toFixed(0)} （${priceSource}）`);
         }
       } catch (e) {
-        logger.debug(`  [yf2-quote] ${yahooSymbol} failed: ${e.message}`);
+        logger.debug(`  [yahoo-direct] ${yahooSymbol} failed: ${e.message}`);
       }
     }
 
-    // ── ② チャート履歴データ（Yahoo Finance v8 API 直接呼び出し） ──
+    // ── ③ チャート履歴データ（OHLCV — 現在価格とは独立して取得） ──
     let historical = null;
     try {
       historical = await this._fetchChartDirect(yahooSymbol, start, end);
@@ -187,7 +196,7 @@ class DataFetcher {
       logger.debug(`  [chart] ${yahooSymbol} failed: ${e.message}`);
     }
 
-    // ── ②-b Yahoo が両方失敗 → Stooq CSV にフォールバック ────────
+    // ── ④ Yahoo 全失敗 → Stooq CSV にフォールバック ──────────────
     if (!currentPrice && !historical) {
       const stooq = await this._fetchStooq(symbol).catch(e => {
         logger.debug(`  [stooq] ${symbol} failed: ${e.message}`);
@@ -195,27 +204,28 @@ class DataFetcher {
       });
       if (stooq) {
         currentPrice = stooq.price;
-        logger.debug(`  [stooq] ${symbol}: ¥${currentPrice.toFixed(0)}`);
+        priceSource = 'Stooq（終値）';
+        logger.info(`  💹 ${symbol} 株価取得: ¥${currentPrice.toFixed(0)} （${priceSource}）`);
       }
     }
 
-    // ── ③ それでも価格が取れない → 例外（呼び元がmock処理） ──────
+    // ── ⑤ それでも価格が取れない → 例外（呼び元がmock処理） ──────
     if (!currentPrice && !historical) {
       throw new DataFetchError(`All sources failed for ${symbol}`, symbol);
     }
 
-    // ── ④ chart失敗 → quoteデータで疑似履歴生成（価格は実値） ────
+    // ── ⑥ chart失敗 → quoteデータで疑似履歴生成（価格は実値） ────
     if (!historical) {
       historical = this._buildHistoricalFromQuote(currentPrice, quoteData, 75);
       logger.debug(`  [synth] ${symbol}: quote から疑似履歴 ${historical.length}日生成`);
     }
 
-    // ── ⑤ quote失敗 → chartの最終終値で代替 ──────────────────────
+    // ── ⑦ quote失敗 → chartの最終終値で代替 ──────────────────────
     if (!currentPrice) {
       const last = historical[historical.length - 1];
       currentPrice = last?.close ?? null;
       if (!currentPrice) throw new DataFetchError(`No price data for ${symbol}`, symbol);
-      logger.debug(`  [chart fallback] ${symbol}: ¥${currentPrice.toFixed(0)}`);
+      logger.info(`  💹 ${symbol} 株価取得: ¥${currentPrice.toFixed(0)} （チャート終値フォールバック）`);
     }
 
     // 最低データ数チェック
