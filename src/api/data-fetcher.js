@@ -152,25 +152,39 @@ class DataFetcher {
     let quoteData = null;
     let priceSource = null;
 
-    // ── ① yahoo-finance2 quote API（最優先 — regularMarketPrice が最も正確） ──
+    // ── ① Yahoo Finance Japan API（最優先 — 日本株に最も信頼性が高い） ──
     try {
-      quoteData = await yahooFinance.quote(yahooSymbol);
-      const p = quoteData.regularMarketPrice
-        ?? quoteData.postMarketPrice
-        ?? quoteData.preMarketPrice
-        ?? null;
-      if (p && p > 0) {
-        currentPrice = p;
-        const state = quoteData.marketState ?? '不明';
-        const stateLabel = state === 'REGULAR' ? '取引中' : state === 'CLOSED' ? '終値' : state === 'POST' ? '時間外' : state;
-        priceSource = `quote API [${stateLabel}]`;
+      const jpPrice = await this._fetchYahooJapan(symbol);
+      if (jpPrice && jpPrice > 0) {
+        currentPrice = jpPrice;
+        priceSource = 'Yahoo Japan';
         logger.info(`  💹 ${symbol} 株価取得: ¥${currentPrice.toFixed(0)} （${priceSource}）`);
       }
     } catch (e) {
-      logger.debug(`  [yf2-quote] ${yahooSymbol} failed: ${e.message}`);
+      logger.debug(`  [yahoo-japan] ${symbol} failed: ${e.message}`);
     }
 
-    // ── ② チャート直接フェッチ（価格が取れなかった場合のフォールバック） ──
+    // ── ② yahoo-finance2 quote API ──────────────────────────────────
+    if (!currentPrice) {
+      try {
+        quoteData = await yahooFinance.quote(yahooSymbol);
+        const p = quoteData.regularMarketPrice
+          ?? quoteData.postMarketPrice
+          ?? quoteData.preMarketPrice
+          ?? null;
+        if (p && p > 0) {
+          currentPrice = p;
+          const state = quoteData.marketState ?? '不明';
+          const stateLabel = state === 'REGULAR' ? '取引中' : state === 'CLOSED' ? '終値' : state === 'POST' ? '時間外' : state;
+          priceSource = `quote API [${stateLabel}]`;
+          logger.info(`  💹 ${symbol} 株価取得: ¥${currentPrice.toFixed(0)} （${priceSource}）`);
+        }
+      } catch (e) {
+        logger.debug(`  [yf2-quote] ${yahooSymbol} failed: ${e.message}`);
+      }
+    }
+
+    // ── ③ チャート直接フェッチ（フォールバック） ──────────────────
     if (!currentPrice) {
       try {
         const direct = await this._fetchYahooDirect(yahooSymbol);
@@ -196,8 +210,8 @@ class DataFetcher {
       logger.debug(`  [chart] ${yahooSymbol} failed: ${e.message}`);
     }
 
-    // ── ④ Yahoo 全失敗 → Stooq CSV にフォールバック ──────────────
-    if (!currentPrice && !historical) {
+    // ── ④ 価格が取れていない → Stooq CSV（終値）にフォールバック ──
+    if (!currentPrice) {
       const stooq = await this._fetchStooq(symbol).catch(e => {
         logger.debug(`  [stooq] ${symbol} failed: ${e.message}`);
         return null;
@@ -300,6 +314,37 @@ class DataFetcher {
     }
 
     return rows.sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  /**
+   * Yahoo Finance Japan API で現在価格を取得
+   * query1.finance.yahoo.co.jp — 日本株に最も信頼性が高い
+   */
+  async _fetchYahooJapan(symbol) {
+    // 4桁の日本株コードを .T 形式に変換
+    const sym = /^\d{4}$/.test(symbol) ? `${symbol}.T` : symbol;
+    const candidates = [
+      `https://query1.finance.yahoo.co.jp/v8/finance/chart/${encodeURIComponent(sym)}?interval=1m&range=1d`,
+      `https://query2.finance.yahoo.co.jp/v8/finance/chart/${encodeURIComponent(sym)}?interval=5m&range=1d`,
+      `https://query1.finance.yahoo.co.jp/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=5d`,
+    ];
+    for (let i = 0; i < candidates.length; i++) {
+      try {
+        if (i > 0) await new Promise(r => setTimeout(r, 300));
+        const data = await _httpsGetJSON(candidates[i], 8000);
+        const r = data?.chart?.result?.[0];
+        if (!r) continue;
+        const meta = r.meta || {};
+        // regularMarketPrice を最優先、次に1分足の最終終値
+        const closes = r?.indicators?.quote?.[0]?.close ?? [];
+        const lastClose = [...closes].reverse().find(v => v != null);
+        const price = meta.regularMarketPrice ?? lastClose;
+        if (price && price > 0) return price;
+      } catch (e) {
+        logger.debug(`  [yahoo-japan] ${sym} candidate ${i} failed: ${e.message}`);
+      }
+    }
+    return null;
   }
 
   /**
