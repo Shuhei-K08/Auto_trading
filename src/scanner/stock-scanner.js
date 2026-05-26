@@ -96,7 +96,7 @@ class StockScanner {
    * @returns {{ pass: boolean, lotRatio: number, priceScore: number, reason: string }}
    */
   checkCapitalRatio(price, available) {
-    const LOT = 100; // 1単元株数（日本株標準）
+    const LOT = config.trading.tradeLotSize || 100; // .env の TRADE_LOT_SIZE（単元未満株なら1）
     const lotCost = price * LOT;
 
     // available が 0 / NaN / undefined の場合は常に通過（ガード）
@@ -167,7 +167,9 @@ class StockScanner {
     logger.info(`Full universe:  ${universe.length} 銘柄 (0xxx除外後: ${scannable.length} 銘柄)`);
     logger.info(`This scan:      ${sample.length} 銘柄をランダムサンプリング`);
     logger.info(`Available cash: ¥${availableCash.toLocaleString('ja-JP')}`);
-    logger.info(`Lot price cap:  ¥${(availableCash * SCAN_CONFIG.maxSingleLotRatio).toLocaleString('ja-JP')} (${SCAN_CONFIG.maxSingleLotRatio * 100}%)`);
+    const lotSize = config.trading.tradeLotSize || 100;
+    const maxPrice = (availableCash * SCAN_CONFIG.maxSingleLotRatio) / lotSize;
+    logger.info(`Lot size:       ${lotSize}株　株価上限: ¥${maxPrice.toLocaleString('ja-JP')} (資金の${SCAN_CONFIG.maxSingleLotRatio * 100}%÷${lotSize}株)`);
     logger.info(`Target:         上位 ${SCAN_CONFIG.topCandidatesCount} 候補`);
     logger.info(`${'='.repeat(55)}\n`);
 
