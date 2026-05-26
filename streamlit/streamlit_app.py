@@ -668,6 +668,7 @@ with st.sidebar:
     page = st.radio("", [
         "📊  ダッシュボード",
         "📈  売買判定",
+        "🔍  銘柄分析",
         "📝  売買記録",
         "🤖  AI分析・銘柄選定",
         "⚙️  設定",
@@ -1104,6 +1105,231 @@ elif "売買判定" in page:
                     extra = f"　SL ¥{float(sl):,.0f}　TP ¥{float(tp):,.0f}" if sl and tp else ""
                     st.markdown(f"{icon} **{ts}　{row.get('symbol','')}　{decision}**"
                                 f"　¥{price:,.0f}×{qty}株{extra}")
+
+
+# ══════════════════════════════════════════════════════════════
+# PAGE: 🔍 銘柄分析
+# ══════════════════════════════════════════════════════════════
+elif "銘柄分析" in page:
+    st.markdown("""
+    <div class="page-header">
+        <h1>🔍 銘柄分析</h1>
+        <p>株式コードを直打ちして価格・チャートを確認し、手動分析を記録する</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ── 銘柄コード入力 ──────────────────────────────────────
+    c_in, c_btn = st.columns([4, 1])
+    with c_in:
+        ticker_input = st.text_input(
+            "銘柄コード（東証4桁）",
+            value=st.session_state.get("search_ticker", ""),
+            placeholder="例: 7203",
+            label_visibility="collapsed",
+        )
+    with c_btn:
+        search_btn = st.button("🔍 検索", type="primary", use_container_width=True)
+
+    if search_btn and ticker_input.strip():
+        st.session_state["search_ticker"] = ticker_input.strip()
+        st.session_state["search_data"]   = None   # キャッシュクリア
+
+    sym = st.session_state.get("search_ticker", "").strip()
+
+    if not sym:
+        st.markdown("""
+        <div class="empty-state" style="padding:48px;">
+            <span class="emoji">🔍</span>
+            銘柄コードを入力して検索してください<br>
+            <small>例：7203（トヨタ）、6758（ソニー）、9984（ソフトバンクG）</small>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        # ── データ取得（5分キャッシュ） ───────────────────────
+        @st.cache_data(ttl=300)
+        def _fetch_stock(code: str):
+            try:
+                import yfinance as yf
+                tk = yf.Ticker(f"{code}.T")
+                hist3m = tk.history(period="3mo", interval="1d")
+                if hist3m.empty:
+                    return None, "データが見つかりません"
+                fi = tk.fast_info
+                current = float(fi.last_price) if hasattr(fi, "last_price") and fi.last_price else float(hist3m["Close"].iloc[-1])
+                prev    = float(hist3m["Close"].iloc[-2]) if len(hist3m) >= 2 else current
+                name    = ""
+                try:
+                    name = tk.info.get("longName", "") or tk.info.get("shortName", "")
+                except:
+                    pass
+                return {
+                    "current": current,
+                    "prev":    prev,
+                    "change":  current - prev,
+                    "change_pct": (current - prev) / prev * 100 if prev else 0,
+                    "high52":  float(fi.year_high)  if hasattr(fi, "year_high")  else None,
+                    "low52":   float(fi.year_low)   if hasattr(fi, "year_low")   else None,
+                    "volume":  float(fi.three_month_average_volume) if hasattr(fi, "three_month_average_volume") else None,
+                    "name":    name,
+                    "hist":    hist3m,
+                }, None
+            except Exception as e:
+                return None, str(e)
+
+        with st.spinner(f"{sym} のデータを取得中..."):
+            data, err = _fetch_stock(sym)
+
+        if err or data is None:
+            st.error(f"❌ 取得エラー: {err or 'データなし'}")
+            st.stop()
+
+        current    = data["current"]
+        prev       = data["prev"]
+        change     = data["change"]
+        change_pct = data["change_pct"]
+        hist       = data["hist"]
+        stock_name = data["name"] or sym
+
+        # ── KPI ────────────────────────────────────────────────
+        c_color = "green" if change >= 0 else "red"
+        c_sign  = "+" if change >= 0 else ""
+        c_arr   = "▲" if change >= 0 else "▼"
+
+        st.markdown(f"""
+        <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);">
+            <div class="kpi-card {c_color}">
+                <span class="kpi-icon">💹</span>
+                <div class="kpi-label">{sym}　{stock_name}</div>
+                <div class="kpi-value">¥{current:,.0f}</div>
+                <div class="kpi-delta {'pos' if change>=0 else 'neg'}">{c_arr} {c_sign}{change:,.0f}（{c_sign}{change_pct:.2f}%）</div>
+            </div>
+            <div class="kpi-card blue">
+                <span class="kpi-icon">📅</span>
+                <div class="kpi-label">前日終値</div>
+                <div class="kpi-value">¥{prev:,.0f}</div>
+                <div class="kpi-delta neu">1営業日前</div>
+            </div>
+            <div class="kpi-card amber">
+                <span class="kpi-icon">📊</span>
+                <div class="kpi-label">52週 高値</div>
+                <div class="kpi-value">{'¥' + f'{data["high52"]:,.0f}' if data["high52"] else '—'}</div>
+                <div class="kpi-delta neu">{'現在値との乖離 ' + f'{(current/data["high52"]-1)*100:+.1f}%' if data["high52"] else ''}</div>
+            </div>
+            <div class="kpi-card blue">
+                <span class="kpi-icon">📉</span>
+                <div class="kpi-label">52週 安値</div>
+                <div class="kpi-value">{'¥' + f'{data["low52"]:,.0f}' if data["low52"] else '—'}</div>
+                <div class="kpi-delta neu">{'現在値との乖離 ' + f'{(current/data["low52"]-1)*100:+.1f}%' if data["low52"] else ''}</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # ── 3ヶ月チャート ──────────────────────────────────────
+        st.markdown('<div class="sec-head">3ヶ月チャート</div>', unsafe_allow_html=True)
+        fig = go.Figure()
+        fig.add_trace(go.Candlestick(
+            x=hist.index,
+            open=hist["Open"], high=hist["High"],
+            low=hist["Low"],  close=hist["Close"],
+            name=sym,
+            increasing_line_color="#059669", decreasing_line_color="#dc2626",
+            increasing_fillcolor="rgba(5,150,105,0.3)",
+            decreasing_fillcolor="rgba(220,38,38,0.3)",
+        ))
+        # 20日移動平均
+        if len(hist) >= 20:
+            ma20 = hist["Close"].rolling(20).mean()
+            fig.add_trace(go.Scatter(
+                x=hist.index, y=ma20, mode="lines", name="MA20",
+                line=dict(color="#4f46e5", width=1.5, dash="dot")
+            ))
+        fig.update_layout(
+            height=320, margin=dict(l=0, r=0, t=8, b=0),
+            plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+            xaxis=dict(showgrid=False, color="#94a3b8", tickfont=dict(size=10),
+                       rangeslider=dict(visible=False)),
+            yaxis=dict(showgrid=True, gridcolor="#f1f5f9", color="#94a3b8",
+                       tickfont=dict(size=10)),
+            legend=dict(orientation="h", y=-0.1, font=dict(size=11)),
+            font=dict(family="Inter, sans-serif"),
+            hoverlabel=dict(bgcolor="white", bordercolor="#e2e8f0"),
+        )
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+        # ── 手動分析を記録 ─────────────────────────────────────
+        st.markdown('<div class="sec-head">分析結果を記録する</div>', unsafe_allow_html=True)
+        st.markdown("""
+        <div style='background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;
+                    padding:12px 16px;margin-bottom:16px;font-size:0.82rem;color:#1d4ed8;'>
+            💡 この記録は <strong>売買判定ページ</strong> と <strong>AI分析ページのログ</strong> に表示されます
+        </div>
+        """, unsafe_allow_html=True)
+
+        with st.form("manual_analysis_form", clear_on_submit=True):
+            r1c1, r1c2 = st.columns(2)
+            decision = r1c1.selectbox("判定", ["BUY", "SELL", "HOLD"])
+            qty_m    = r1c2.number_input("株数", min_value=1, step=1, value=1)
+
+            r2c1, r2c2 = st.columns(2)
+            price_m  = r2c1.number_input("分析価格（¥）", min_value=1.0, step=1.0,
+                                         value=max(current, 1.0))
+            conf_m   = r2c2.slider("信頼度（%）", min_value=50, max_value=95,
+                                   value=65, step=5)
+
+            r3c1, r3c2, r3c3 = st.columns(3)
+            sl_m = r3c1.number_input("🛑 損切り価格（¥）", min_value=0.0, step=1.0,
+                                     value=round(current * 0.95, 0))
+            tp_m = r3c2.number_input("🎯 利確価格（¥）",  min_value=0.0, step=1.0,
+                                     value=round(current * 1.10, 0))
+            rr_m = r3c3.number_input("R/R 比率", min_value=0.0, step=0.1,
+                                     value=round((current*1.10 - current) / (current - current*0.95), 2)
+                                           if current * 0.95 < current else 2.0)
+
+            reasoning = st.text_area("分析メモ・理由（任意）", height=80,
+                                     placeholder="テクニカル・ファンダメンタルの根拠など...")
+
+            save_btn = st.form_submit_button("💾 記録を保存する", type="primary",
+                                             use_container_width=True)
+
+        if save_btn:
+            sl_val = sl_m if sl_m > 0 else None
+            tp_val = tp_m if tp_m > 0 else None
+            rr_val = rr_m if rr_m > 0 else None
+            execute(
+                "INSERT INTO analysis_log "
+                "(symbol, decision, price, quantity, confidence, "
+                " stop_loss, take_profit, risk_reward, reasoning) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (sym, decision, price_m, qty_m, conf_m / 100,
+                 sl_val, tp_val, rr_val, reasoning or f"手動分析 {sym}")
+            )
+            st.cache_data.clear()
+            st.success(f"✅ {sym} の手動分析（{decision}）を保存しました。「売買判定」ページで確認できます。")
+            if decision == "BUY":
+                st.balloons()
+
+        # ── 同銘柄の過去ログ ──────────────────────────────────
+        past_logs = query(
+            "SELECT * FROM analysis_log WHERE symbol=? ORDER BY timestamp DESC LIMIT 20",
+            (sym,)
+        )
+        if not past_logs.empty:
+            st.markdown(f'<div class="sec-head">{sym} の過去の分析ログ</div>',
+                        unsafe_allow_html=True)
+            with st.expander(f"📂 {sym} の分析履歴（{len(past_logs)}件）"):
+                for _, row in past_logs.iterrows():
+                    dec  = row.get("decision", "")
+                    dt   = to_jst(row.get("timestamp", ""))
+                    ts   = dt.strftime("%m/%d %H:%M") if dt else "—"
+                    p    = float(row.get("price") or 0)
+                    c    = float(row.get("confidence") or 0)
+                    sl_r = row.get("stop_loss")
+                    tp_r = row.get("take_profit")
+                    icon = "🟢" if dec == "BUY" else "🔴" if dec == "SELL" else "🟡"
+                    extra = f"　SL ¥{float(sl_r):,.0f}　TP ¥{float(tp_r):,.0f}" if sl_r and tp_r else ""
+                    st.markdown(
+                        f"{icon} **{ts}　{dec}**　¥{p:,.0f}　信頼度 {c*100:.0f}%{extra}"
+                    )
 
 
 # ══════════════════════════════════════════════════════════════
