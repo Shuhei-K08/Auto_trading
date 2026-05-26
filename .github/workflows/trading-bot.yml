@@ -42,7 +42,7 @@ jobs:
           TRADE_LOT_SIZE: '1'
           TARGET_ALLOCATION_PERCENT: '0.70'
           MAX_POSITIONS: '5'
-          MAX_POSITION_PERCENT: '0.20'
+          MAX_POSITION_PERCENT: ${{ secrets.MAX_POSITION_PERCENT || '0.50' }}
           MAX_RISK_PER_TRADE: '0.02'
           MAX_DAILY_LOSS_PERCENT: '0.05'
           STOP_LOSS_PERCENT: '0.05'
