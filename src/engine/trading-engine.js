@@ -334,6 +334,15 @@ class TradingEngine {
         );
         logger.info(`  ✓ Order: ${orderResult.orderId} @ ¥${orderResult.price}`);
 
+        // アドバイザーモードは推奨出力のみ — 資金操作・ポジション保存をスキップ
+        if (orderResult.mode === 'advisor') {
+          executedOrders++;
+          if (analysis.decision === 'BUY') buySignals++;
+          if (analysis.decision === 'SELL') sellSignals++;
+          logger.info(`  ℹ️ [Advisor] 推奨のみ出力（ポジション未登録）`);
+          continue;
+        }
+
         // 買い約定 → 資金を減らす
         if (analysis.decision === 'BUY') {
           const cost = orderResult.price * positionSize.quantity;

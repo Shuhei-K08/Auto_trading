@@ -236,10 +236,12 @@ class NeonRepository {
       if (existing.rows.length > 0) {
         await this.pool.query(
           `UPDATE portfolio SET
-             current_capital = $1, available_cash = $2, invested_stocks = $3,
-             deposits = $4, withdrawals = $5, total_gains = $6, monthly_gains = $7
-           WHERE date = $8`,
+             initial_capital = $1,
+             current_capital = $2, available_cash = $3, invested_stocks = $4,
+             deposits = $5, withdrawals = $6, total_gains = $7, monthly_gains = $8
+           WHERE date = $9`,
           [
+            portfolioData.initialCapital,
             portfolioData.currentCapital,
             portfolioData.availableCash,
             portfolioData.investedStocks,
