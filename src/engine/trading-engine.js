@@ -235,9 +235,10 @@ class TradingEngine {
 
         // 資金チェック（毎回最新の availableCash を取得 — 同一サイクル内の連続買いで枯渇判定）
         const availableCash = this.capitalManager.getAvailableCash();
-        const minCost = currentPrice * 100;
+        const LOT = config.trading?.tradeLotSize ?? 100;
+        const minCost = currentPrice * LOT;
         if (minCost > availableCash) {
-          logger.info(`  ⊘ Skip: 資金不足 (1単元¥${minCost.toLocaleString('ja-JP')} > 利用可能¥${availableCash.toLocaleString('ja-JP')})`);
+          logger.info(`  ⊘ Skip: 資金不足 (${LOT}株¥${minCost.toLocaleString('ja-JP')} > 利用可能¥${availableCash.toLocaleString('ja-JP')})`);
           continue;
         }
 
