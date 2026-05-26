@@ -38,7 +38,7 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           TRADING_MODE: ${{ github.event.inputs.trading_mode || 'advisor' }}
-          PORTFOLIO_VALUE: ${{ secrets.PORTFOLIO_VALUE || '1000000' }}
+          PORTFOLIO_VALUE: ${{ secrets.PORTFOLIO_VALUE || '10000' }}
           LOG_LEVEL: 'info'
         run: |
           mkdir -p logs

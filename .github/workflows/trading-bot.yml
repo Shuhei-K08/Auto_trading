@@ -38,7 +38,7 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           TRADING_MODE: ${{ github.event.inputs.trading_mode || 'advisor' }}
-          PORTFOLIO_VALUE: ${{ secrets.PORTFOLIO_VALUE || '1000000' }}
+          PORTFOLIO_VALUE: ${{ secrets.PORTFOLIO_VALUE || '10000' }}
           TRADE_LOT_SIZE: '1'
           TARGET_ALLOCATION_PERCENT: '0.70'
           MAX_POSITIONS: '5'
@@ -48,7 +48,7 @@ jobs:
           STOP_LOSS_PERCENT: '0.05'
           TAKE_PROFIT_PERCENT: '0.10'
           CONFIDENCE_THRESHOLD: '0.60'
-          WATCHED_STOCKS: ${{ secrets.WATCHED_STOCKS || '0462,9536,6138,2978,4820,5195,2002,8308' }}
+          WATCHED_STOCKS: ${{ secrets.WATCHED_STOCKS || '9536,6138,2978,4820,5195,2002,8308' }}
           LOG_LEVEL: 'info'
         run: |
           mkdir -p logs
