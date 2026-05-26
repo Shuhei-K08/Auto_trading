@@ -4,16 +4,22 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
-import sqlite3 from 'sqlite3';
+import TradeRepository from '../database/trade-repository.js';
+import NeonRepository from '../database/neon-repository.js';
 import logger from '../utils/logger.js';
 import config from '../config.js';
 
 const WATCHLIST_SIZE = 8;  // 最終ウォッチリスト件数
 
+/** DATABASE_URL の有無で使用 DB を切り替え */
+function createRepository() {
+  return process.env.DATABASE_URL ? new NeonRepository() : new TradeRepository();
+}
+
 class WatchlistManager {
   constructor() {
     this.client = new Anthropic({ apiKey: config.anthropic.apiKey });
-    this.dbPath = config.database.path;
+    this.repository = createRepository();
   }
 
   // ───────────────────────────────────────────
@@ -46,18 +52,10 @@ class WatchlistManager {
    * @returns {Array} {symbol, name, sector, ...}
    */
   async getActiveWatchlist() {
-    const db = await this.openDB();
-    return new Promise((resolve, reject) => {
-      db.all(
-        `SELECT * FROM watchlist WHERE is_active = 1 ORDER BY rank ASC`,
-        [],
-        (err, rows) => {
-          db.close();
-          if (err) reject(err);
-          else resolve(rows ?? []);
-        }
-      );
-    });
+    const rows = await this.repository.query(
+      `SELECT * FROM watchlist WHERE is_active = 1 ORDER BY rank ASC`
+    );
+    return rows ?? [];
   }
 
   /**
@@ -65,25 +63,21 @@ class WatchlistManager {
    * @returns {boolean}
    */
   async needsUpdate() {
-    const db = await this.openDB();
-    return new Promise((resolve, reject) => {
-      db.get(
-        `SELECT MAX(created_at) as last_update FROM watchlist WHERE is_active = 1`,
-        [],
-        (err, row) => {
-          db.close();
-          if (err) { resolve(true); return; }
-          if (!row?.last_update) { resolve(true); return; }
-
-          const lastUpdate = new Date(row.last_update);
-          const now = new Date();
-          const daysDiff = (now - lastUpdate) / (1000 * 60 * 60 * 24);
-
-          // 14日（2週間）以上経過で更新
-          resolve(daysDiff >= 14);
-        }
+    try {
+      const row = await this.repository.queryOne(
+        `SELECT MAX(created_at) as last_update FROM watchlist WHERE is_active = 1`
       );
-    });
+      if (!row?.last_update) return true;
+
+      const lastUpdate = new Date(row.last_update);
+      const now = new Date();
+      const daysDiff = (now - lastUpdate) / (1000 * 60 * 60 * 24);
+
+      // 14日（2週間）以上経過で更新
+      return daysDiff >= 14;
+    } catch {
+      return true;
+    }
   }
 
   // ───────────────────────────────────────────
@@ -237,51 +231,38 @@ ${candidateList}
    * ウォッチリストをDBに保存
    */
   async saveWatchlist(selected) {
-    const db = await this.openDB();
     const today = new Date().toISOString().split('T')[0];
     const nextUpdate = this.calcNextUpdateDate();
 
-    return new Promise((resolve, reject) => {
-      db.serialize(() => {
-        // 旧ウォッチリストを非アクティブ化
-        db.run(`UPDATE watchlist SET is_active = 0`);
+    // 旧ウォッチリストを非アクティブ化
+    await this.repository.execute(`UPDATE watchlist SET is_active = 0`);
 
-        const stmt = db.prepare(`
-          INSERT INTO watchlist (
-            symbol, name, sector, rank, current_price,
-            technical_score, composite_score, signal, confidence,
-            adx, trend, convergence_rate,
-            selection_reason, expected_behavior, risk_note, overall_market_view,
-            selection_date, next_update_date, is_active
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
-        `);
+    // 新規レコードを順次挿入
+    const insertSql = `
+      INSERT INTO watchlist (
+        symbol, name, sector, rank, current_price,
+        technical_score, composite_score, signal, confidence,
+        adx, trend, convergence_rate,
+        selection_reason, expected_behavior, risk_note, overall_market_view,
+        selection_date, next_update_date, is_active
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+    `;
 
-        for (const s of selected) {
-          stmt.run(
-            s.symbol, s.name ?? s.symbol, s.sector ?? '不明',
-            s.rank, s.currentPrice ?? 0,
-            s.technicalScore ?? 0, s.compositeScore ?? 0,
-            s.signal ?? 'HOLD', s.confidence ?? 0.5,
-            s.adx ?? 0, s.trend ?? 'NEUTRAL',
-            s.convergenceRate ?? 0,
-            s.selectionReason ?? '', s.expectedBehavior ?? '',
-            s.riskNote ?? '', s.overallMarketView ?? '',
-            today, nextUpdate
-          );
-        }
+    for (const s of selected) {
+      await this.repository.execute(insertSql, [
+        s.symbol, s.name ?? s.symbol, s.sector ?? '不明',
+        s.rank, s.currentPrice ?? 0,
+        s.technicalScore ?? 0, s.compositeScore ?? 0,
+        s.signal ?? 'HOLD', s.confidence ?? 0.5,
+        s.adx ?? 0, s.trend ?? 'NEUTRAL',
+        s.convergenceRate ?? 0,
+        s.selectionReason ?? '', s.expectedBehavior ?? '',
+        s.riskNote ?? '', s.overallMarketView ?? '',
+        today, nextUpdate,
+      ]);
+    }
 
-        stmt.finalize((err) => {
-          db.close();
-          if (err) {
-            logger.error(`[WatchlistManager] DB save error: ${err.message}`);
-            reject(err);
-          } else {
-            logger.info(`[WatchlistManager] ${selected.length}銘柄をウォッチリストに保存（選定日: ${today}、次回: ${nextUpdate}）`);
-            resolve();
-          }
-        });
-      });
-    });
+    logger.info(`[WatchlistManager] ${selected.length}銘柄をウォッチリストに保存（選定日: ${today}、次回: ${nextUpdate}）`);
   }
 
   /**
@@ -304,15 +285,6 @@ ${candidateList}
     return nextDate.toISOString().split('T')[0];
   }
 
-  /** DB 接続を開く */
-  openDB() {
-    return new Promise((resolve, reject) => {
-      const db = new sqlite3.Database(this.dbPath, (err) => {
-        if (err) reject(err);
-        else resolve(db);
-      });
-    });
-  }
 }
 
 export default WatchlistManager;

@@ -560,7 +560,7 @@ elif page == "⚙️ 設定":
     with st.container(border=True):
         st.subheader("📡 監視銘柄")
         env = load_env()
-        current_stocks = env.get('WATCHED_STOCKS', '0462,9536,6138,2978,4820,5195,2002,8308')
+        current_stocks = env.get('WATCHED_STOCKS', '9536,6138,2978,4820,5195,2002,8308')
 
         new_stocks = st.text_area(
             "監視銘柄（カンマ区切り）",

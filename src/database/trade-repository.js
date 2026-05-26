@@ -127,14 +127,16 @@ class TradeRepository {
         let values;
 
         if (row) {
-          // 更新
+          // 更新（initial_capital も含めて上書き — PORTFOLIO_VALUE 変更に対応）
           sql = `
             UPDATE portfolio SET
+              initial_capital = ?,
               current_capital = ?, available_cash = ?, invested_stocks = ?,
               deposits = ?, withdrawals = ?, total_gains = ?, monthly_gains = ?
             WHERE date = ?
           `;
           values = [
+            portfolioData.initialCapital,
             portfolioData.currentCapital,
             portfolioData.availableCash,
             portfolioData.investedStocks,
