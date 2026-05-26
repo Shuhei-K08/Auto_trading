@@ -492,24 +492,62 @@ elif page == "📝 売買記録":
 elif page == "🤖 AI分析・銘柄選定":
     st.title("🤖 AI分析・銘柄選定")
 
-    # ── GitHub Actions トリガー関数 ───────────────────────────
-    def trigger_github_workflow(workflow_file):
+    # ── GitHub Actions ヘルパー関数 ──────────────────────────
+    import urllib.request, json as _json
+
+    def _github_request(method, path, payload=None):
         token = st.secrets.get("GITHUB_TOKEN", "")
         repo  = st.secrets.get("GITHUB_REPO", "")
         if not token or not repo:
-            return False, "GITHUB_TOKEN / GITHUB_REPO が Secrets に設定されていません"
-        import urllib.request, json
-        url     = f"https://api.github.com/repos/{repo}/actions/workflows/{workflow_file}/dispatches"
-        payload = json.dumps({"ref": "main"}).encode()
-        req     = urllib.request.Request(url, data=payload, method="POST")
+            return None, "GITHUB_TOKEN / GITHUB_REPO が Secrets に未設定"
+        url = f"https://api.github.com/repos/{repo}{path}"
+        req = urllib.request.Request(url, data=_json.dumps(payload).encode() if payload else None, method=method)
         req.add_header("Authorization", f"token {token}")
         req.add_header("Accept", "application/vnd.github+json")
         req.add_header("Content-Type", "application/json")
         try:
-            urllib.request.urlopen(req, timeout=10)
-            return True, "✅ GitHub Actions を起動しました（約1〜3分で完了します）"
+            with urllib.request.urlopen(req, timeout=10) as r:
+                return _json.loads(r.read()), None
+        except urllib.error.HTTPError as e:
+            if e.code == 204:   # dispatches は 204 No Content で成功
+                return {}, None
+            return None, f"HTTP {e.code}: {e.reason}"
         except Exception as e:
-            return False, f"❌ 起動失敗: {e}"
+            return None, str(e)
+
+    def trigger_github_workflow(workflow_file):
+        _, err = _github_request("POST", f"/actions/workflows/{workflow_file}/dispatches", {"ref": "main"})
+        if err:
+            return False, f"❌ 起動失敗: {err}"
+        return True, "✅ GitHub Actions を起動しました（数秒後にステータスが更新されます）"
+
+    def get_workflow_status(workflow_file):
+        """最新の実行ステータスを取得"""
+        data, err = _github_request("GET", f"/actions/workflows/{workflow_file}/runs?per_page=1")
+        if err or not data:
+            return None
+        runs = data.get("workflow_runs", [])
+        return runs[0] if runs else None
+
+    def render_status_badge(run):
+        """ステータスバッジを表示"""
+        if not run:
+            return
+        status     = run.get("status", "")
+        conclusion = run.get("conclusion", "")
+        updated    = run.get("updated_at", "")[:16].replace("T", " ")
+        url        = run.get("html_url", "#")
+
+        if status == "in_progress" or status == "queued":
+            st.info(f"⏳ **実行中...** （開始: {updated} UTC）　[ログを見る]({url})")
+        elif conclusion == "success":
+            st.success(f"✅ **完了** （{updated} UTC）　[ログを見る]({url})")
+        elif conclusion == "failure":
+            st.error(f"❌ **失敗** （{updated} UTC）　[ログを見る]({url})")
+        elif conclusion == "cancelled":
+            st.warning(f"⚠️ **キャンセル** （{updated} UTC）　[ログを見る]({url})")
+        else:
+            st.caption(f"ステータス: {status} / {conclusion}　[ログを見る]({url})")
 
     # ── 毎日の AI 分析 ────────────────────────────────────────
     with st.container(border=True):
@@ -525,9 +563,7 @@ elif page == "🤖 AI分析・銘柄選定":
                     st.success(msg)
                 else:
                     st.error(msg)
-                    st.markdown(
-                        "手動実行: [GitHub Actions で開く](https://github.com/Shuhei-K08/Auto_trading/actions/workflows/trading-bot.yml)"
-                    )
+        render_status_badge(get_workflow_status("trading-bot.yml"))
 
     st.divider()
 
@@ -546,9 +582,7 @@ elif page == "🤖 AI分析・銘柄選定":
                     st.success(msg)
                 else:
                     st.error(msg)
-                    st.markdown(
-                        "手動実行: [GitHub Actions で開く](https://github.com/Shuhei-K08/Auto_trading/actions/workflows/watchlist-scan.yml)"
-                    )
+        render_status_badge(get_workflow_status("watchlist-scan.yml"))
 
         # 現在のウォッチリスト表示
         wl = get_watchlist()
