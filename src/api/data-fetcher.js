@@ -394,9 +394,17 @@ class DataFetcher {
     const idxOf  = n => header.indexOf(n);
     const close  = parseFloat(row[idxOf('close')]);
     if (!close || isNaN(close)) throw new Error('Stooq close invalid');
+    const date   = row[idxOf('date')] || null;
+
+    // データが当日のものかチェック（JST基準）
+    const todayJST = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    if (date && date !== todayJST) {
+      logger.warn(`  ⚠️ ${symbol} Stooq データが前日（${date}）のものです。15:30以降に実行すると当日終値が取得できます。`);
+    }
+
     return {
       price: close,
-      date: row[idxOf('date')] || null,
+      date,
       source: 'stooq',
     };
   }

@@ -67,6 +67,13 @@ async function main() {
     // node src/index.js --run-trading : 売買分析を1回実行して終了
     // node src/index.js --run-scan    : 銘柄選定を1回実行して終了
     if (process.argv.includes('--run-trading') || process.argv.includes('--test')) {
+      // 15:30 JST（UTC 6:30）前の手動実行は前日終値になる旨を警告
+      const nowHourJST = (new Date().getUTCHours() + 9) % 24;
+      const nowMinJST  = new Date().getUTCMinutes();
+      if (nowHourJST < 15 || (nowHourJST === 15 && nowMinJST < 30)) {
+        logger.warn('⚠️  現在は取引時間中または引け前です。株価は前日終値または遅延データになる場合があります。');
+        logger.warn('⚠️  正確な当日終値を使うには 15:30 JST 以降に実行してください。\n');
+      }
       logger.info('One-shot mode: Running trading once...\n');
       await scheduler.executeTrading();
       logger.info('✓ Trading execution complete. Exiting.');
