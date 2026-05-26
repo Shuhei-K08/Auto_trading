@@ -154,8 +154,13 @@ class TradingEngine {
           ? pnl * (1 - config.constants.TAX_RATE)
           : pnl; // 損失には税金かからない
 
+        // アドバイザーモードは推奨出力のみ — DB クローズ・資金操作をスキップ
+        if (orderResult.mode === 'advisor') {
+          logger.info(`  ℹ️ [Advisor] 売り推奨のみ出力（ポジションはそのまま）`);
+          continue;
+        }
+
         // ポジションをクローズ状態に更新
-        // repository.closePosition の期待フィールド名に合わせる
         await this.repository.closePosition(position.id, {
           exitPrice:          executedPrice,
           exitReason:         closeReason,
