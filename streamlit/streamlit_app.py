@@ -618,12 +618,7 @@ elif page == "⚙️ 設定":
         st.subheader("⚙️ 取引設定")
         env = load_env()
         col1, col2 = st.columns(2)
-        portfolio_val = col1.number_input(
-            "初期資金（¥）",
-            value=int(env.get('PORTFOLIO_VALUE', 10000)),
-            step=1000
-        )
-        confidence = col2.slider(
+        confidence = col1.slider(
             "AI信頼度しきい値（%）",
             min_value=50, max_value=90,
             value=int(float(env.get('CONFIDENCE_THRESHOLD', 0.60)) * 100)
@@ -632,11 +627,37 @@ elif page == "⚙️ 設定":
         tp = col2.number_input("利確（%）",  value=float(env.get('TAKE_PROFIT_PERCENT', 0.10)) * 100, step=0.5)
 
         if st.button("💾 取引設定を保存"):
-            save_env_key('PORTFOLIO_VALUE', str(int(portfolio_val)))
             save_env_key('CONFIDENCE_THRESHOLD', str(confidence / 100))
             save_env_key('STOP_LOSS_PERCENT', str(sl / 100))
             save_env_key('TAKE_PROFIT_PERCENT', str(tp / 100))
-            st.success("✅ 保存しました。GitHub Secrets の `PORTFOLIO_VALUE` も合わせて更新してください。")
+            st.success("✅ 保存しました。")
+
+    st.divider()
+
+    # ── 軍資金リセット ────────────────────────────────────────
+    with st.container(border=True):
+        st.subheader("💴 軍資金をリセット")
+        st.caption("⚠️ 現在の資産・損益がすべてリセットされます。保有ポジションは手動で売却記録を入力してください。")
+        new_capital = st.number_input(
+            "新しい軍資金（¥）",
+            min_value=1000,
+            step=1000,
+            value=int(env.get('PORTFOLIO_VALUE', 10000)),
+        )
+        if st.button("🔄 この金額でリセットする", type="primary"):
+            today = date.today().isoformat()
+            # 既存レコードを削除して新規挿入
+            execute("DELETE FROM portfolio")
+            execute(
+                """INSERT INTO portfolio
+                   (date, initial_capital, current_capital, available_cash,
+                    invested_stocks, deposits, withdrawals, total_gains, monthly_gains)
+                   VALUES (?, ?, ?, ?, 0, 0, 0, 0, 0)""",
+                (today, new_capital, new_capital, new_capital)
+            )
+            save_env_key('PORTFOLIO_VALUE', str(int(new_capital)))
+            st.cache_data.clear()
+            st.success(f"✅ 軍資金を ¥{new_capital:,} にリセットしました。")
 
     st.divider()
 
