@@ -39,6 +39,7 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           TRADING_MODE: ${{ github.event.inputs.trading_mode || 'advisor' }}
           PORTFOLIO_VALUE: ${{ secrets.PORTFOLIO_VALUE || '10000' }}
+          TRADE_LOT_SIZE: '1'
           LOG_LEVEL: 'info'
         run: |
           mkdir -p logs
