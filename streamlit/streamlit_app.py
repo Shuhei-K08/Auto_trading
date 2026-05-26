@@ -533,19 +533,29 @@ elif page == "🤖 AI分析・銘柄選定":
         """ステータスバッジを表示"""
         if not run:
             return
+        from datetime import timezone, timedelta
+        JST = timezone(timedelta(hours=9))
+
+        def fmt_jst(utc_str):
+            try:
+                dt = datetime.fromisoformat(utc_str.replace("Z", "+00:00"))
+                return dt.astimezone(JST).strftime("%Y-%m-%d %H:%M JST")
+            except Exception:
+                return utc_str[:16]
+
         status     = run.get("status", "")
         conclusion = run.get("conclusion", "")
-        updated    = run.get("updated_at", "")[:16].replace("T", " ")
+        updated    = fmt_jst(run.get("updated_at", ""))
         url        = run.get("html_url", "#")
 
-        if status == "in_progress" or status == "queued":
-            st.info(f"⏳ **実行中...** （開始: {updated} UTC）　[ログを見る]({url})")
+        if status in ("in_progress", "queued"):
+            st.info(f"⏳ **実行中...** （{updated}）　[ログを見る]({url})")
         elif conclusion == "success":
-            st.success(f"✅ **完了** （{updated} UTC）　[ログを見る]({url})")
+            st.success(f"✅ **完了** （{updated}）　[ログを見る]({url})")
         elif conclusion == "failure":
-            st.error(f"❌ **失敗** （{updated} UTC）　[ログを見る]({url})")
+            st.error(f"❌ **失敗** （{updated}）　[ログを見る]({url})")
         elif conclusion == "cancelled":
-            st.warning(f"⚠️ **キャンセル** （{updated} UTC）　[ログを見る]({url})")
+            st.warning(f"⚠️ **キャンセル** （{updated}）　[ログを見る]({url})")
         else:
             st.caption(f"ステータス: {status} / {conclusion}　[ログを見る]({url})")
 
