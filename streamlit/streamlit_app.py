@@ -571,10 +571,24 @@ elif page == "🤖 AI分析・銘柄選定":
     if trades_df.empty:
         st.info("まだ分析結果がありません。")
     else:
+        def to_jst(ts_str):
+            try:
+                from datetime import timezone, timedelta
+                JST = timezone(timedelta(hours=9))
+                ts_str = str(ts_str).strip()
+                # タイムゾーン情報を除いて parse
+                ts_str_clean = ts_str.replace('Z', '+00:00')
+                dt = datetime.fromisoformat(ts_str_clean)
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                return dt.astimezone(JST).strftime('%Y-%m-%d %H:%M')
+            except Exception:
+                return str(ts_str)[:16]
+
         for _, row in trades_df.iterrows():
             decision = row.get('decision', '')
             badge = "badge-buy" if decision == "BUY" else "badge-sell"
-            ts    = str(row.get('timestamp', ''))[:16]
+            ts    = to_jst(row.get('timestamp', ''))
             with st.expander(f"{ts}　{row.get('symbol','')}　{'🟢 BUY' if decision=='BUY' else '🔴 SELL'}"):
                 st.write(f"**単価:** ¥{float(row.get('entry_price') or 0):,.0f}　**株数:** {row.get('quantity',0)}株")
                 st.write(f"**信頼度:** {float(row.get('confidence') or 0)*100:.0f}%")
