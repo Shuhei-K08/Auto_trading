@@ -6,7 +6,7 @@ CASATS — Claude AI Stock Auto Trading System
   📊 ダッシュボード    : 資産概要・保有株・含み損益
   📝 売買記録         : 手動で購入・売却を入力、損益計算
   🤖 AI分析・銘柄選定 : 手動トリガー（GitHub Actions または直接実行）
-  ⚙️  設定            : 監視銘柄・メール設定
+  ⚙️  設定            : 取引設定・軍資金リセット
 """
 
 import streamlit as st
@@ -646,31 +646,6 @@ elif page == "🤖 AI分析・銘柄選定":
 # ══════════════════════════════════════════════════════════════
 elif page == "⚙️ 設定":
     st.title("⚙️ 設定")
-
-    # ── 監視銘柄 ──────────────────────────────────────────────
-    with st.container(border=True):
-        st.subheader("📡 監視銘柄")
-        env = load_env()
-        current_stocks = env.get('WATCHED_STOCKS', '9536,6138,2978,4820,5195,2002,8308')
-
-        new_stocks = st.text_area(
-            "監視銘柄（カンマ区切り）",
-            value=current_stocks,
-            height=80,
-            help="銘柄コードをカンマで区切って入力（例: 7203,6758,9984）"
-        )
-        if st.button("💾 監視銘柄を保存", type="primary"):
-            # ローカルの .env を更新
-            save_env_key('WATCHED_STOCKS', new_stocks.strip())
-            # GitHub Secrets への反映案内
-            st.success("✅ ローカルの .env を更新しました。")
-            st.info(
-                "GitHub Actions に反映するには、以下の Secret も更新してください：  \n"
-                "https://github.com/Shuhei-K08/Auto_trading/settings/secrets/actions  \n"
-                "→ `WATCHED_STOCKS` を更新"
-            )
-
-    st.divider()
 
     # ── 取引設定 ──────────────────────────────────────────────
     with st.container(border=True):
