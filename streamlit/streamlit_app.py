@@ -682,14 +682,25 @@ elif page == "⚙️ 設定":
             min_value=50, max_value=90,
             value=int(float(env.get('CONFIDENCE_THRESHOLD', 0.60)) * 100)
         )
+        max_pos_pct = col2.slider(
+            "1ポジション上限（%）",
+            min_value=10, max_value=100, step=5,
+            value=int(float(env.get('MAX_POSITION_PERCENT', 0.20)) * 100),
+            help="軍資金の何%まで1銘柄に投資するか。例: 50% → ¥10,000の場合 ¥5,000以下の銘柄が対象"
+        )
         sl = col1.number_input("損切り（%）", value=float(env.get('STOP_LOSS_PERCENT', 0.05)) * 100, step=0.5)
         tp = col2.number_input("利確（%）",  value=float(env.get('TAKE_PROFIT_PERCENT', 0.10)) * 100, step=0.5)
 
+        cap = int(env.get('PORTFOLIO_VALUE', 10000))
+        st.caption(f"現在の設定: 軍資金 ¥{cap:,} × {max_pos_pct}% = **¥{int(cap * max_pos_pct / 100):,} 以下の銘柄**が購入対象")
+
         if st.button("💾 取引設定を保存"):
             save_env_key('CONFIDENCE_THRESHOLD', str(confidence / 100))
+            save_env_key('MAX_POSITION_PERCENT', str(max_pos_pct / 100))
             save_env_key('STOP_LOSS_PERCENT', str(sl / 100))
             save_env_key('TAKE_PROFIT_PERCENT', str(tp / 100))
-            st.success("✅ 保存しました。")
+            st.success("✅ 保存しました。GitHub Secrets の `MAX_POSITION_PERCENT` も更新してください。")
+            st.info(f"1ポジション上限: ¥{int(cap * max_pos_pct / 100):,}（¥{int(cap * max_pos_pct / 100):,}以下の銘柄が対象）")
 
     st.divider()
 
