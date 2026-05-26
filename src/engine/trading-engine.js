@@ -157,6 +157,8 @@ class TradingEngine {
         // アドバイザーモードは推奨出力のみ — DB クローズ・資金操作をスキップ
         if (orderResult.mode === 'advisor') {
           logger.info(`  ℹ️ [Advisor] 売り推奨のみ出力（ポジションはそのまま）`);
+          logger.info(`  📌 売り推奨: ${position.symbol} @ ¥${currentPrice.toLocaleString('ja-JP')} × ${quantity}株`);
+          logger.info(`  💰 損益試算: ¥${pnl.toFixed(0)} (${pnlPercent.toFixed(2)}%)　理由: ${closeReason}`);
           continue;
         }
 
@@ -346,6 +348,9 @@ class TradingEngine {
           if (analysis.decision === 'BUY') buySignals++;
           if (analysis.decision === 'SELL') sellSignals++;
           logger.info(`  ℹ️ [Advisor] 推奨のみ出力（ポジション未登録）`);
+          logger.info(`  📌 買い推奨: ${symbol} @ ¥${currentPrice.toLocaleString('ja-JP')} × ${positionSize.quantity}株`);
+          logger.info(`  🛑 損切り価格: ¥${positionSize.stopLoss?.toLocaleString('ja-JP')}　🎯 利確価格: ¥${positionSize.takeProfit?.toLocaleString('ja-JP')}`);
+          logger.info(`  📊 信頼度: ${(analysis.confidence * 100).toFixed(1)}%　リスクリワード: ${positionSize.riskRewardRatio}`);
           continue;
         }
 
