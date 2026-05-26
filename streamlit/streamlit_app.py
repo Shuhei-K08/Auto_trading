@@ -202,6 +202,7 @@ with st.sidebar:
 
     page = st.radio("", [
         "📊 ダッシュボード",
+        "📈 売買判定",
         "📝 売買記録",
         "🤖 AI分析・銘柄選定",
         "⚙️ 設定",
@@ -614,55 +615,191 @@ elif page == "🤖 AI分析・銘柄選定":
 
     st.divider()
 
-    # ── 直近の AI 判断ログ ────────────────────────────────────
-    st.subheader("📋 直近の AI 判断ログ")
-    logs_df = get_analysis_logs(20)
+    # ── 直近の AI 判断ログ（今日分のみ表示）─────────────────────
+    st.subheader("📋 本日の AI 判断ログ")
+    logs_df = get_analysis_logs(50)
+
+    def to_jst(ts_str):
+        try:
+            from datetime import timezone, timedelta
+            JST = timezone(timedelta(hours=9))
+            ts_str = str(ts_str).strip()
+            ts_str_clean = ts_str.replace('Z', '+00:00')
+            dt = datetime.fromisoformat(ts_str_clean)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.astimezone(JST)
+        except Exception:
+            return None
+
+    def render_log_row(row):
+        decision = row.get('decision', '')
+        ts_dt = to_jst(row.get('timestamp', ''))
+        ts = ts_dt.strftime('%Y-%m-%d %H:%M') if ts_dt else str(row.get('timestamp',''))[:16]
+        icon = '🟢 BUY' if decision == 'BUY' else '🔴 SELL'
+        with st.expander(f"{ts}　{row.get('symbol','')}　{icon}"):
+            c1, c2, c3 = st.columns(3)
+            c1.metric("単価", f"¥{float(row.get('price') or 0):,.0f}")
+            c2.metric("株数", f"{row.get('quantity', 0)}株")
+            c3.metric("信頼度", f"{float(row.get('confidence') or 0)*100:.0f}%")
+            if decision == 'BUY':
+                sl = row.get('stop_loss')
+                tp = row.get('take_profit')
+                rr = row.get('risk_reward')
+                sc1, sc2, sc3 = st.columns(3)
+                sc1.metric("🛑 損切り価格", f"¥{float(sl):,.0f}" if sl else "—")
+                sc2.metric("🎯 利確価格",   f"¥{float(tp):,.0f}" if tp else "—")
+                sc3.metric("リスクリワード", f"{float(rr):.2f}" if rr else "—")
+            if decision == 'SELL':
+                pnl = row.get('pnl')
+                pct = row.get('pnl_percent')
+                reason = row.get('close_reason', '')
+                if pnl is not None:
+                    color = "normal" if float(pnl) >= 0 else "inverse"
+                    st.metric("💰 損益試算", f"¥{float(pnl):,.0f} ({float(pct or 0):.2f}%)", delta_color=color)
+                if reason:
+                    st.caption(f"理由: {reason}")
+            if row.get('reasoning'):
+                with st.expander("AI分析詳細"):
+                    st.caption(row['reasoning'][:400])
+
     if logs_df.empty:
         st.info("まだ分析結果がありません。")
     else:
-        def to_jst(ts_str):
-            try:
-                from datetime import timezone, timedelta
-                JST = timezone(timedelta(hours=9))
-                ts_str = str(ts_str).strip()
-                ts_str_clean = ts_str.replace('Z', '+00:00')
-                dt = datetime.fromisoformat(ts_str_clean)
-                if dt.tzinfo is None:
-                    dt = dt.replace(tzinfo=timezone.utc)
-                return dt.astimezone(JST).strftime('%Y-%m-%d %H:%M')
-            except Exception:
-                return str(ts_str)[:16]
+        from datetime import timezone, timedelta
+        JST = timezone(timedelta(hours=9))
+        today_jst = datetime.now(JST).date()
 
+        today_rows = []
+        past_rows  = []
         for _, row in logs_df.iterrows():
-            decision = row.get('decision', '')
-            ts = to_jst(row.get('timestamp', ''))
-            icon = '🟢 BUY' if decision == 'BUY' else '🔴 SELL'
-            with st.expander(f"{ts}　{row.get('symbol','')}　{icon}"):
-                c1, c2, c3 = st.columns(3)
-                c1.metric("単価", f"¥{float(row.get('price') or 0):,.0f}")
-                c2.metric("株数", f"{row.get('quantity', 0)}株")
-                c3.metric("信頼度", f"{float(row.get('confidence') or 0)*100:.0f}%")
-                if decision == 'BUY':
-                    sl = row.get('stop_loss')
-                    tp = row.get('take_profit')
-                    rr = row.get('risk_reward')
-                    sc1, sc2, sc3 = st.columns(3)
-                    sc1.metric("🛑 損切り価格", f"¥{float(sl):,.0f}" if sl else "—")
-                    sc2.metric("🎯 利確価格",   f"¥{float(tp):,.0f}" if tp else "—")
-                    sc3.metric("リスクリワード", f"{float(rr):.2f}" if rr else "—")
-                if decision == 'SELL':
-                    pnl = row.get('pnl')
-                    pct = row.get('pnl_percent')
-                    reason = row.get('close_reason', '')
+            ts_dt = to_jst(row.get('timestamp', ''))
+            if ts_dt and ts_dt.date() == today_jst:
+                today_rows.append(row)
+            else:
+                past_rows.append(row)
+
+        if today_rows:
+            for row in today_rows:
+                render_log_row(row)
+        else:
+            st.info("本日の判断ログはまだありません。")
+
+        if past_rows:
+            with st.expander(f"📂 過去のログ（{len(past_rows)}件）"):
+                for row in past_rows:
+                    render_log_row(row)
+
+
+# ══════════════════════════════════════════════════════════════
+# PAGE: 📈 売買判定
+# ══════════════════════════════════════════════════════════════
+elif page == "📈 売買判定":
+    st.title("📈 売買判定")
+
+    from datetime import timezone, timedelta
+    JST = timezone(timedelta(hours=9))
+
+    def to_jst_dt(ts_str):
+        try:
+            ts_str = str(ts_str).strip().replace('Z', '+00:00')
+            dt = datetime.fromisoformat(ts_str)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.astimezone(JST)
+        except Exception:
+            return None
+
+    logs_df = get_analysis_logs(100)
+
+    if logs_df.empty:
+        st.info("まだ分析結果がありません。「🤖 AI分析・銘柄選定」ページからボットを実行してください。")
+    else:
+        # 最新実行日時を取得
+        latest_ts = None
+        for _, row in logs_df.iterrows():
+            dt = to_jst_dt(row.get('timestamp', ''))
+            if dt and (latest_ts is None or dt > latest_ts):
+                latest_ts = dt
+
+        # 最新実行と同じ「日付」のログだけ表示
+        target_date = latest_ts.date() if latest_ts else None
+        latest_rows = [row for _, row in logs_df.iterrows()
+                       if to_jst_dt(row.get('timestamp','')) and
+                          to_jst_dt(row.get('timestamp','')).date() == target_date]
+
+        st.caption(f"最終分析: {latest_ts.strftime('%Y-%m-%d %H:%M')} JST　（{len(latest_rows)}銘柄）" if latest_ts else "")
+
+        buy_rows  = [r for r in latest_rows if r.get('decision') == 'BUY']
+        sell_rows = [r for r in latest_rows if r.get('decision') == 'SELL']
+
+        # ── BUY 推奨 ────────────────────────────────────────
+        st.subheader(f"🟢 買い推奨　{len(buy_rows)}銘柄")
+        if buy_rows:
+            for row in buy_rows:
+                sl  = row.get('stop_loss')
+                tp  = row.get('take_profit')
+                rr  = row.get('risk_reward')
+                qty = row.get('quantity', 0)
+                price = float(row.get('price') or 0)
+                conf  = float(row.get('confidence') or 0)
+                with st.container(border=True):
+                    h1, h2 = st.columns([2, 1])
+                    h1.markdown(f"### {row.get('symbol','')}　¥{price:,.0f} × {qty}株")
+                    h2.metric("信頼度", f"{conf*100:.0f}%")
+                    c1, c2, c3 = st.columns(3)
+                    c1.metric("🛑 損切り価格", f"¥{float(sl):,.0f}" if sl else "—")
+                    c2.metric("🎯 利確価格",   f"¥{float(tp):,.0f}" if tp else "—")
+                    c3.metric("リスクリワード", f"{float(rr):.2f}" if rr else "—")
+                    total_cost = price * qty
+                    st.caption(f"必要金額: ¥{total_cost:,.0f}")
+        else:
+            st.info("本日の買い推奨はありません。")
+
+        st.divider()
+
+        # ── SELL 推奨 ───────────────────────────────────────
+        st.subheader(f"🔴 売り推奨　{len(sell_rows)}銘柄")
+        if sell_rows:
+            for row in sell_rows:
+                pnl    = row.get('pnl')
+                pct    = row.get('pnl_percent')
+                reason = row.get('close_reason', '')
+                price  = float(row.get('price') or 0)
+                qty    = row.get('quantity', 0)
+                with st.container(border=True):
+                    h1, h2 = st.columns([2, 1])
+                    h1.markdown(f"### {row.get('symbol','')}　¥{price:,.0f} × {qty}株")
                     if pnl is not None:
-                        color = "normal" if float(pnl) >= 0 else "inverse"
-                        st.metric("💰 損益試算", f"¥{float(pnl):,.0f} ({float(pct or 0):.2f}%)", delta_color=color)
+                        sign = "+" if float(pnl) >= 0 else ""
+                        color = "🟢" if float(pnl) >= 0 else "🔴"
+                        h2.metric("損益試算", f"{color} {sign}¥{float(pnl):,.0f} ({sign}{float(pct or 0):.2f}%)")
                     if reason:
                         st.caption(f"理由: {reason}")
-                if row.get('reasoning'):
-                    with st.expander("AI分析詳細"):
-                        st.caption(row['reasoning'][:400])
+        else:
+            st.info("本日の売り推奨はありません。")
 
+        # ── 過去の判定履歴 ──────────────────────────────────
+        past_rows = [row for _, row in logs_df.iterrows()
+                     if to_jst_dt(row.get('timestamp','')).date() != target_date
+                     if to_jst_dt(row.get('timestamp',''))] if target_date else []
+        if past_rows:
+            with st.expander(f"📂 過去の判定履歴（{len(past_rows)}件）"):
+                for row in past_rows:
+                    decision = row.get('decision', '')
+                    dt = to_jst_dt(row.get('timestamp', ''))
+                    ts = dt.strftime('%m/%d %H:%M') if dt else '—'
+                    icon = '🟢' if decision == 'BUY' else '🔴'
+                    price = float(row.get('price') or 0)
+                    qty   = row.get('quantity', 0)
+                    sl    = row.get('stop_loss')
+                    tp    = row.get('take_profit')
+                    st.markdown(
+                        f"{icon} **{ts}　{row.get('symbol','')}　{decision}**　"
+                        f"¥{price:,.0f}×{qty}株　"
+                        f"SL:¥{float(sl):,.0f}　TP:¥{float(tp):,.0f}" if sl and tp else
+                        f"{icon} **{ts}　{row.get('symbol','')}　{decision}**　¥{price:,.0f}×{qty}株"
+                    )
 
 # ══════════════════════════════════════════════════════════════
 # PAGE: ⚙️ 設定
