@@ -25,12 +25,21 @@ class NeonRepository {
     });
   }
 
-  /** 接続テスト & テーブル自動作成 */
+  /** 接続テスト */
   async ping() {
     const client = await this.pool.connect();
     try {
       await client.query('SELECT 1');
-      // analysis_log テーブルが存在しない場合は自動作成
+      return true;
+    } finally {
+      client.release();
+    }
+  }
+
+  /** テーブル初期化（起動時に呼ぶ） */
+  async initializeTables() {
+    const client = await this.pool.connect();
+    try {
       await client.query(`
         CREATE TABLE IF NOT EXISTS analysis_log (
           id SERIAL PRIMARY KEY,
@@ -49,7 +58,7 @@ class NeonRepository {
           timestamp TIMESTAMPTZ DEFAULT NOW()
         )
       `);
-      return true;
+      logger.info('✓ Neon tables initialized (analysis_log)');
     } finally {
       client.release();
     }

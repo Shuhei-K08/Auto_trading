@@ -8,6 +8,7 @@ import config from './config.js';
 import logger from './utils/logger.js';
 import TradingScheduler from './scheduler/trading-scheduler.js';
 import DBInit from './database/db-init.js';
+import NeonRepository from './database/neon-repository.js';
 
 // 環境変数を読み込む
 dotenv.config();
@@ -49,7 +50,15 @@ async function main() {
 
     // データベース初期化
     logger.info('Initializing database...');
-    await DBInit.initialize();
+    if (process.env.DATABASE_URL) {
+      // Neon DB（クラウド）: テーブル自動作成
+      const neon = new NeonRepository();
+      await neon.initializeTables();
+      await neon.close();
+    } else {
+      // SQLite（ローカル）
+      await DBInit.initialize();
+    }
     logger.info('✓ Database initialized\n');
 
     const scheduler = new TradingScheduler();
