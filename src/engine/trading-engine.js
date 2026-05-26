@@ -159,6 +159,21 @@ class TradingEngine {
           logger.info(`  ℹ️ [Advisor] 売り推奨のみ出力（ポジションはそのまま）`);
           logger.info(`  📌 売り推奨: ${position.symbol} @ ¥${currentPrice.toLocaleString('ja-JP')} × ${quantity}株`);
           logger.info(`  💰 損益試算: ¥${pnl.toFixed(0)} (${pnlPercent.toFixed(2)}%)　理由: ${closeReason}`);
+          // 分析ログをDBに保存
+          try {
+            await this.repository.saveAnalysisLog({
+              symbol: position.symbol,
+              decision: 'SELL',
+              price: currentPrice,
+              quantity,
+              confidence: 0.9,
+              closeReason,
+              pnl,
+              pnlPercent,
+            });
+          } catch (e) {
+            logger.debug(`  Analysis log save skipped: ${e.message}`);
+          }
           continue;
         }
 
@@ -351,6 +366,22 @@ class TradingEngine {
           logger.info(`  📌 買い推奨: ${symbol} @ ¥${currentPrice.toLocaleString('ja-JP')} × ${positionSize.quantity}株`);
           logger.info(`  🛑 損切り価格: ¥${positionSize.stopLoss?.toLocaleString('ja-JP')}　🎯 利確価格: ¥${positionSize.takeProfit?.toLocaleString('ja-JP')}`);
           logger.info(`  📊 信頼度: ${(analysis.confidence * 100).toFixed(1)}%　リスクリワード: ${positionSize.riskRewardRatio}`);
+          // 分析ログをDBに保存（UIで表示するため）
+          try {
+            await this.repository.saveAnalysisLog({
+              symbol,
+              decision: analysis.decision,
+              price: currentPrice,
+              quantity: positionSize.quantity,
+              confidence: analysis.confidence,
+              stopLoss: positionSize.stopLoss,
+              takeProfit: positionSize.takeProfit,
+              riskReward: positionSize.riskRewardRatio,
+              reasoning: JSON.stringify(analysis).slice(0, 500),
+            });
+          } catch (e) {
+            logger.debug(`  Analysis log save skipped: ${e.message}`);
+          }
           continue;
         }
 

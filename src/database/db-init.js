@@ -155,6 +155,27 @@ class DBInit {
           `,
         },
         {
+          name: 'analysis_log',
+          sql: `
+            CREATE TABLE IF NOT EXISTS analysis_log (
+              id INTEGER PRIMARY KEY,
+              symbol VARCHAR(10) NOT NULL,
+              decision VARCHAR(10) NOT NULL,
+              price REAL NOT NULL,
+              quantity INTEGER NOT NULL,
+              confidence REAL NOT NULL,
+              stop_loss REAL,
+              take_profit REAL,
+              risk_reward REAL,
+              reasoning TEXT,
+              close_reason TEXT,
+              pnl REAL,
+              pnl_percent REAL,
+              timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+          `,
+        },
+        {
           name: 'watchlist',
           sql: `
             CREATE TABLE IF NOT EXISTS watchlist (

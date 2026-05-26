@@ -163,6 +163,10 @@ def get_closed_positions(limit=50):
 def get_recent_trades(limit=30):
     return query(f"SELECT * FROM trades ORDER BY timestamp DESC LIMIT {limit}")
 
+@st.cache_data(ttl=30)
+def get_analysis_logs(limit=30):
+    return query(f"SELECT * FROM analysis_log ORDER BY timestamp DESC LIMIT {limit}")
+
 @st.cache_data(ttl=60)
 def get_watchlist():
     return query("SELECT * FROM watchlist WHERE is_active=1 ORDER BY rank ASC")
@@ -612,8 +616,8 @@ elif page == "🤖 AI分析・銘柄選定":
 
     # ── 直近の AI 判断ログ ────────────────────────────────────
     st.subheader("📋 直近の AI 判断ログ")
-    trades_df = get_recent_trades(20)
-    if trades_df.empty:
+    logs_df = get_analysis_logs(20)
+    if logs_df.empty:
         st.info("まだ分析結果がありません。")
     else:
         def to_jst(ts_str):
@@ -621,7 +625,6 @@ elif page == "🤖 AI分析・銘柄選定":
                 from datetime import timezone, timedelta
                 JST = timezone(timedelta(hours=9))
                 ts_str = str(ts_str).strip()
-                # タイムゾーン情報を除いて parse
                 ts_str_clean = ts_str.replace('Z', '+00:00')
                 dt = datetime.fromisoformat(ts_str_clean)
                 if dt.tzinfo is None:
@@ -630,15 +633,35 @@ elif page == "🤖 AI分析・銘柄選定":
             except Exception:
                 return str(ts_str)[:16]
 
-        for _, row in trades_df.iterrows():
+        for _, row in logs_df.iterrows():
             decision = row.get('decision', '')
-            badge = "badge-buy" if decision == "BUY" else "badge-sell"
-            ts    = to_jst(row.get('timestamp', ''))
-            with st.expander(f"{ts}　{row.get('symbol','')}　{'🟢 BUY' if decision=='BUY' else '🔴 SELL'}"):
-                st.write(f"**単価:** ¥{float(row.get('entry_price') or 0):,.0f}　**株数:** {row.get('quantity',0)}株")
-                st.write(f"**信頼度:** {float(row.get('confidence') or 0)*100:.0f}%")
+            ts = to_jst(row.get('timestamp', ''))
+            icon = '🟢 BUY' if decision == 'BUY' else '🔴 SELL'
+            with st.expander(f"{ts}　{row.get('symbol','')}　{icon}"):
+                c1, c2, c3 = st.columns(3)
+                c1.metric("単価", f"¥{float(row.get('price') or 0):,.0f}")
+                c2.metric("株数", f"{row.get('quantity', 0)}株")
+                c3.metric("信頼度", f"{float(row.get('confidence') or 0)*100:.0f}%")
+                if decision == 'BUY':
+                    sl = row.get('stop_loss')
+                    tp = row.get('take_profit')
+                    rr = row.get('risk_reward')
+                    sc1, sc2, sc3 = st.columns(3)
+                    sc1.metric("🛑 損切り価格", f"¥{float(sl):,.0f}" if sl else "—")
+                    sc2.metric("🎯 利確価格",   f"¥{float(tp):,.0f}" if tp else "—")
+                    sc3.metric("リスクリワード", f"{float(rr):.2f}" if rr else "—")
+                if decision == 'SELL':
+                    pnl = row.get('pnl')
+                    pct = row.get('pnl_percent')
+                    reason = row.get('close_reason', '')
+                    if pnl is not None:
+                        color = "normal" if float(pnl) >= 0 else "inverse"
+                        st.metric("💰 損益試算", f"¥{float(pnl):,.0f} ({float(pct or 0):.2f}%)", delta_color=color)
+                    if reason:
+                        st.caption(f"理由: {reason}")
                 if row.get('reasoning'):
-                    st.caption(row['reasoning'][:300])
+                    with st.expander("AI分析詳細"):
+                        st.caption(row['reasoning'][:400])
 
 
 # ══════════════════════════════════════════════════════════════

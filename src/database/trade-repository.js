@@ -391,6 +391,29 @@ class TradeRepository {
   }
 
   /**
+   * AI分析ログを保存（advisor モード用）
+   */
+  async saveAnalysisLog(logData) {
+    const db = await this.getDB();
+    return new Promise((resolve, reject) => {
+      const sql = `INSERT INTO analysis_log
+        (symbol, decision, price, quantity, confidence, stop_loss, take_profit, risk_reward, reasoning, close_reason, pnl, pnl_percent)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+      const values = [
+        logData.symbol, logData.decision, logData.price, logData.quantity,
+        logData.confidence, logData.stopLoss ?? null, logData.takeProfit ?? null,
+        logData.riskReward ?? null, logData.reasoning ?? null,
+        logData.closeReason ?? null, logData.pnl ?? null, logData.pnlPercent ?? null,
+      ];
+      db.run(sql, values, function(err) {
+        db.close();
+        if (err) reject(new DatabaseError(`Failed to save analysis log: ${err.message}`));
+        else resolve({ id: this.lastID });
+      });
+    });
+  }
+
+  /**
    * 日別サマリーを保存
    */
   async saveDailySummary(summaryData) {

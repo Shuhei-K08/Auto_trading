@@ -25,11 +25,30 @@ class NeonRepository {
     });
   }
 
-  /** 接続テスト */
+  /** 接続テスト & テーブル自動作成 */
   async ping() {
     const client = await this.pool.connect();
     try {
       await client.query('SELECT 1');
+      // analysis_log テーブルが存在しない場合は自動作成
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS analysis_log (
+          id SERIAL PRIMARY KEY,
+          symbol VARCHAR(10) NOT NULL,
+          decision VARCHAR(10) NOT NULL,
+          price REAL NOT NULL,
+          quantity INTEGER NOT NULL,
+          confidence REAL NOT NULL,
+          stop_loss REAL,
+          take_profit REAL,
+          risk_reward REAL,
+          reasoning TEXT,
+          close_reason TEXT,
+          pnl REAL,
+          pnl_percent REAL,
+          timestamp TIMESTAMPTZ DEFAULT NOW()
+        )
+      `);
       return true;
     } finally {
       client.release();
@@ -287,6 +306,24 @@ class NeonRepository {
     } catch (e) {
       throw new DatabaseError(`Failed to get portfolio: ${e.message}`);
     }
+  }
+
+  // ─────────────────────────────────────────────────
+  // analysis_log
+  // ─────────────────────────────────────────────────
+
+  async saveAnalysisLog(logData) {
+    await this.pool.query(
+      `INSERT INTO analysis_log
+        (symbol, decision, price, quantity, confidence, stop_loss, take_profit, risk_reward, reasoning, close_reason, pnl, pnl_percent)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+      [
+        logData.symbol, logData.decision, logData.price, logData.quantity,
+        logData.confidence, logData.stopLoss ?? null, logData.takeProfit ?? null,
+        logData.riskReward ?? null, logData.reasoning ?? null,
+        logData.closeReason ?? null, logData.pnl ?? null, logData.pnlPercent ?? null,
+      ]
+    );
   }
 
   // ─────────────────────────────────────────────────
