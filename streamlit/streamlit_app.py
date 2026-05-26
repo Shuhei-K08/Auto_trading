@@ -492,31 +492,63 @@ elif page == "📝 売買記録":
 elif page == "🤖 AI分析・銘柄選定":
     st.title("🤖 AI分析・銘柄選定")
 
+    # ── GitHub Actions トリガー関数 ───────────────────────────
+    def trigger_github_workflow(workflow_file):
+        token = st.secrets.get("GITHUB_TOKEN", "")
+        repo  = st.secrets.get("GITHUB_REPO", "")
+        if not token or not repo:
+            return False, "GITHUB_TOKEN / GITHUB_REPO が Secrets に設定されていません"
+        import urllib.request, json
+        url     = f"https://api.github.com/repos/{repo}/actions/workflows/{workflow_file}/dispatches"
+        payload = json.dumps({"ref": "main"}).encode()
+        req     = urllib.request.Request(url, data=payload, method="POST")
+        req.add_header("Authorization", f"token {token}")
+        req.add_header("Accept", "application/vnd.github+json")
+        req.add_header("Content-Type", "application/json")
+        try:
+            urllib.request.urlopen(req, timeout=10)
+            return True, "✅ GitHub Actions を起動しました（約1〜3分で完了します）"
+        except Exception as e:
+            return False, f"❌ 起動失敗: {e}"
+
     # ── 毎日の AI 分析 ────────────────────────────────────────
     with st.container(border=True):
-        st.subheader("📊 毎日の売買分析")
-        st.caption(
-            "監視銘柄に対して Claude AI がテクニカル分析を実行し、売買推奨を出力します。  \n"
-            "毎朝 8:00 JST に GitHub Actions が自動実行します。今すぐ実行したい場合は下のリンクから。"
-        )
-        st.markdown(
-            "👉 [GitHub Actions で今すぐ実行する](https://github.com/Shuhei-K08/Auto_trading/actions/workflows/trading-bot.yml)",
-            unsafe_allow_html=False
-        )
-        st.caption("実行後、結果はメールで届き、ダッシュボードに反映されます。")
+        st.subheader("📊 売買分析を実行")
+        st.caption("監視銘柄に対して Claude AI がテクニカル分析を実行し、売買推奨を出力します。")
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            st.caption("毎営業日 15:05 JST に自動実行。今すぐ手動実行する場合はボタンを押してください。")
+        with col2:
+            if st.button("▶ 今すぐ実行", type="primary", use_container_width=True, key="run_trading"):
+                ok, msg = trigger_github_workflow("trading-bot.yml")
+                if ok:
+                    st.success(msg)
+                else:
+                    st.error(msg)
+                    st.markdown(
+                        "手動実行: [GitHub Actions で開く](https://github.com/Shuhei-K08/Auto_trading/actions/workflows/trading-bot.yml)"
+                    )
 
     st.divider()
 
     # ── 月次銘柄選定 ─────────────────────────────────────────
     with st.container(border=True):
-        st.subheader("📡 月次銘柄選定")
+        st.subheader("📡 銘柄選定を実行")
         st.caption(
             "東証上場銘柄から200社をサンプリングし、テクニカルスコアで上位8銘柄を選定します。  \n"
-            "月1回の実行を推奨します。"
+            "月1〜2回の実行を推奨します。"
         )
-        st.markdown(
-            "👉 [GitHub Actions（銘柄スキャン）で実行する](https://github.com/Shuhei-K08/Auto_trading/actions/workflows/trading-bot.yml)",
-        )
+        col1, col2 = st.columns([2, 1])
+        with col2:
+            if st.button("▶ 今すぐ実行", type="primary", use_container_width=True, key="run_scan"):
+                ok, msg = trigger_github_workflow("watchlist-scan.yml")
+                if ok:
+                    st.success(msg)
+                else:
+                    st.error(msg)
+                    st.markdown(
+                        "手動実行: [GitHub Actions で開く](https://github.com/Shuhei-K08/Auto_trading/actions/workflows/watchlist-scan.yml)"
+                    )
 
         # 現在のウォッチリスト表示
         wl = get_watchlist()
