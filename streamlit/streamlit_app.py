@@ -990,24 +990,25 @@ elif "売買判定" in page:
 
                     info_html = ""
                     if sl and tp and rr:
-                        info_html = f"""
-                        <div class="info-grid">
-                            <div class="info-cell">
-                                <div class="info-cell-label">🛑 損切り</div>
-                                <div class="info-cell-value sl">¥{float(sl):,.0f}</div>
-                            </div>
-                            <div class="info-cell">
-                                <div class="info-cell-label">🎯 利確</div>
-                                <div class="info-cell-value tp">¥{float(tp):,.0f}</div>
-                            </div>
-                            <div class="info-cell">
-                                <div class="info-cell-label">R/R 比率</div>
-                                <div class="info-cell-value">{float(rr):.2f}</div>
-                            </div>
-                        </div>
-                        <div style='margin-top:10px;font-size:0.72rem;color:#94a3b8;
-                                    text-align:right;'>必要金額 ¥{cost:,.0f}</div>
-                        """
+                        sl_v = float(sl); tp_v = float(tp); rr_v = float(rr)
+                        # 改行なし1行で書く（Markdownのコードブロック誤認を防ぐ）
+                        info_html = (
+                            '<div class="info-grid">'
+                            '<div class="info-cell">'
+                            '<div class="info-cell-label">🛑 損切り</div>'
+                            f'<div class="info-cell-value sl">¥{sl_v:,.0f}</div>'
+                            '</div>'
+                            '<div class="info-cell">'
+                            '<div class="info-cell-label">🎯 利確</div>'
+                            f'<div class="info-cell-value tp">¥{tp_v:,.0f}</div>'
+                            '</div>'
+                            '<div class="info-cell">'
+                            '<div class="info-cell-label">R/R 比率</div>'
+                            f'<div class="info-cell-value">{rr_v:.2f}</div>'
+                            '</div>'
+                            '</div>'
+                            f'<div style="margin-top:10px;font-size:.72rem;color:#94a3b8;text-align:right;">必要金額 ¥{cost:,.0f}</div>'
+                        )
 
                     st.markdown(f"""
                     <div class="signal-card buy">
@@ -1772,25 +1773,43 @@ elif "設定" in page:
             save_env_key('TAKE_PROFIT_PERCENT', str(tp / 100))
             st.success("✅ 保存しました。GitHub Secrets の `MAX_POSITION_PERCENT` も更新してください。")
 
-    st.markdown('<div class="sec-head">軍資金をリセット</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sec-head">軍資金を更新</div>', unsafe_allow_html=True)
     with st.container(border=True):
-        st.warning("⚠️ 現在の資産・損益がすべてリセットされます。")
+        st.info("💡 損益・決済履歴・保有ポジションはそのまま保持されます。")
         new_capital = st.number_input(
-            "新しい軍資金（¥）", min_value=1000, step=1000,
+            "軍資金（¥）", min_value=1000, step=1000,
             value=int(env.get('PORTFOLIO_VALUE', 10000))
         )
-        if st.button("🔄 この金額でリセットする", type="primary"):
+        if st.button("💾 軍資金を更新する", type="primary"):
             today = date.today().isoformat()
-            execute("DELETE FROM portfolio")
-            execute(
-                "INSERT INTO portfolio (date, initial_capital, current_capital, available_cash, "
-                "invested_stocks, deposits, withdrawals, total_gains, monthly_gains) "
-                "VALUES (?, ?, ?, ?, 0, 0, 0, 0, 0)",
-                (today, new_capital, new_capital, new_capital)
-            )
+            cur_port      = get_portfolio()
+            total_gains   = float(cur_port.get('total_gains', 0))
+            monthly_gains = float(cur_port.get('monthly_gains', 0))
+            invested      = float(cur_port.get('invested_stocks', 0))
+            deposits      = float(cur_port.get('deposits', 0))
+            withdrawals   = float(cur_port.get('withdrawals', 0))
+            # 余力 = 新軍資金 - 保有株評価額（マイナスにならないよう0以上に）
+            available = max(new_capital - invested, 0)
+            # 総資産 = 新軍資金 + 累計損益
+            current = new_capital + total_gains
+            existing = query("SELECT id FROM portfolio ORDER BY date DESC LIMIT 1")
+            if not existing.empty:
+                execute(
+                    "UPDATE portfolio SET initial_capital=?, current_capital=?, "
+                    "available_cash=?, date=? WHERE id=?",
+                    (new_capital, current, available, today, int(existing.iloc[0]['id']))
+                )
+            else:
+                execute(
+                    "INSERT INTO portfolio (date, initial_capital, current_capital, "
+                    "available_cash, invested_stocks, deposits, withdrawals, "
+                    "total_gains, monthly_gains) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (today, new_capital, current, available, invested,
+                     deposits, withdrawals, total_gains, monthly_gains)
+                )
             save_env_key('PORTFOLIO_VALUE', str(int(new_capital)))
             st.cache_data.clear()
-            st.success(f"✅ 軍資金を ¥{new_capital:,} にリセットしました。")
+            st.success(f"✅ 軍資金を ¥{new_capital:,} に更新しました（損益・履歴は保持されています）。")
 
     st.markdown('<div class="sec-head">データベース</div>', unsafe_allow_html=True)
     with st.container(border=True):
