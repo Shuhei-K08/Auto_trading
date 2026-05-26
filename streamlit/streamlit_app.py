@@ -507,9 +507,10 @@ elif page == "🤖 AI分析・銘柄選定":
         req.add_header("Content-Type", "application/json")
         try:
             with urllib.request.urlopen(req, timeout=10) as r:
-                return _json.loads(r.read()), None
+                body = r.read()
+                return (_json.loads(body) if body.strip() else {}), None
         except urllib.error.HTTPError as e:
-            if e.code == 204:   # dispatches は 204 No Content で成功
+            if e.code in (204, 201):  # 204 No Content / 201 Created → 成功
                 return {}, None
             return None, f"HTTP {e.code}: {e.reason}"
         except Exception as e:
@@ -518,8 +519,8 @@ elif page == "🤖 AI分析・銘柄選定":
     def trigger_github_workflow(workflow_file):
         _, err = _github_request("POST", f"/actions/workflows/{workflow_file}/dispatches", {"ref": "main"})
         if err:
-            return False, f"❌ 起動失敗: {err}"
-        return True, "✅ GitHub Actions を起動しました（数秒後にステータスが更新されます）"
+            return False, f"起動失敗: {err}"
+        return True, "✅ GitHub Actions を起動しました"
 
     def get_workflow_status(workflow_file):
         """最新の実行ステータスを取得"""
@@ -569,10 +570,10 @@ elif page == "🤖 AI分析・銘柄選定":
         with col2:
             if st.button("▶ 今すぐ実行", type="primary", use_container_width=True, key="run_trading"):
                 ok, msg = trigger_github_workflow("trading-bot.yml")
-                if ok:
-                    st.success(msg)
-                else:
-                    st.error(msg)
+                st.session_state["trading_msg"] = (ok, msg)
+        if "trading_msg" in st.session_state:
+            ok, msg = st.session_state["trading_msg"]
+            (st.success if ok else st.error)(msg)
         render_status_badge(get_workflow_status("trading-bot.yml"))
 
     st.divider()
@@ -588,10 +589,10 @@ elif page == "🤖 AI分析・銘柄選定":
         with col2:
             if st.button("▶ 今すぐ実行", type="primary", use_container_width=True, key="run_scan"):
                 ok, msg = trigger_github_workflow("watchlist-scan.yml")
-                if ok:
-                    st.success(msg)
-                else:
-                    st.error(msg)
+                st.session_state["scan_msg"] = (ok, msg)
+        if "scan_msg" in st.session_state:
+            ok, msg = st.session_state["scan_msg"]
+            (st.success if ok else st.error)(msg)
         render_status_badge(get_workflow_status("watchlist-scan.yml"))
 
         # 現在のウォッチリスト表示
