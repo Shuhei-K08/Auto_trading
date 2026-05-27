@@ -528,6 +528,54 @@ def get_portfolio():
     df = query("SELECT * FROM portfolio ORDER BY date DESC LIMIT 1")
     return df.iloc[0].to_dict() if not df.empty else {}
 
+def update_portfolio_for_trade(decision: str, amount: float, pnl: float = 0.0):
+    """
+    手動売買登録時にポートフォリオ（余力・総資産）を更新する。
+
+    BUY:  amount = 購入金額（price × qty）
+          → available_cash -= amount
+          → invested_stocks += amount
+          → current_capital は不変（現金が株に変わるだけ）
+
+    SELL: amount = 売却金額（sell_price × qty）, pnl = 損益（売却額 − 取得額）
+          → available_cash += amount
+          → invested_stocks -= (amount - pnl)  ← 取得コスト分を解除
+          → current_capital += pnl
+          → total_gains += pnl
+    """
+    try:
+        today = date.today().isoformat()
+        port_df = query("SELECT * FROM portfolio ORDER BY date DESC LIMIT 1")
+        if port_df.empty:
+            return  # ポートフォリオ未初期化のためスキップ
+
+        row             = port_df.iloc[0]
+        port_id         = int(row['id'])
+        available_cash  = float(row.get('available_cash',  0) or 0)
+        invested_stocks = float(row.get('invested_stocks', 0) or 0)
+        current_capital = float(row.get('current_capital', 0) or 0)
+        total_gains     = float(row.get('total_gains',     0) or 0)
+
+        if decision == 'BUY':
+            available_cash  = max(0.0, available_cash - amount)
+            invested_stocks = invested_stocks + amount
+            # current_capital は変わらない（現金→株への振替）
+
+        elif decision == 'SELL':
+            original_cost   = amount - pnl           # 取得コスト = 売却額 − 損益
+            available_cash  = available_cash + amount
+            invested_stocks = max(0.0, invested_stocks - original_cost)
+            current_capital = current_capital + pnl
+            total_gains     = total_gains + pnl
+
+        execute(
+            "UPDATE portfolio SET available_cash=?, invested_stocks=?, "
+            "current_capital=?, total_gains=?, date=? WHERE id=?",
+            (available_cash, invested_stocks, current_capital, total_gains, today, port_id)
+        )
+    except Exception as e:
+        st.warning(f"⚠️ ポートフォリオ更新に失敗しました: {e}")
+
 @st.cache_data(ttl=60)
 def get_open_positions():
     return query("SELECT * FROM positions WHERE status IN ('holding','open') ORDER BY entry_date DESC")
@@ -1472,6 +1520,8 @@ elif "売買記録" in page:
                      note or f"手動購入 {qty}株 @¥{price:,.0f}",
                      datetime.now().isoformat())
                 )
+                # ポートフォリオ（余力・投資額）を更新
+                update_portfolio_for_trade('BUY', total)
                 st.cache_data.clear()
                 st.success(f"✅ **{symbol}**　{qty}株　@¥{price:,.0f}　を記録しました（合計 ¥{total:,.0f}）")
                 st.balloons()
@@ -1531,6 +1581,9 @@ elif "売買記録" in page:
                         (selected_pos['symbol'], sell_qty, entry_p, selected_pos['entry_date'],
                          sell_price, sell_date.isoformat(), sell_reason, pnl, pnl_pct)
                     )
+                # ポートフォリオ（余力・総資産・損益）を更新
+                proceeds = sell_price * sell_qty
+                update_portfolio_for_trade('SELL', proceeds, pnl)
                 st.cache_data.clear()
                 st.success(
                     f"✅ **{selected_pos['symbol']}**　{sell_qty}株　@¥{sell_price:,.0f}\n\n"
