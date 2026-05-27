@@ -2090,6 +2090,69 @@ elif "設定" in page:
             st.cache_data.clear()
             st.success(f"✅ 軍資金を ¥{new_capital:,} に更新しました（損益・履歴は保持されています）。")
 
+    # ──────────────────────────────────────────────────────────
+    # ポートフォリオ再計算（既存の売買記録から余力・総資産を再集計）
+    # ──────────────────────────────────────────────────────────
+    st.markdown('<div class="sec-head">ポートフォリオを再計算</div>', unsafe_allow_html=True)
+    with st.container(border=True):
+        st.info(
+            "💡 すでに登録済みの売買記録から「余力」「投資額」「総資産」「累計損益」を再集計します。\n\n"
+            "手動登録した取引が余力に反映されていない場合は、このボタンを押してください。"
+        )
+        if st.button("🔄 売買記録から再計算する", type="primary", use_container_width=True):
+            try:
+                today = date.today().isoformat()
+
+                # 1. 現在の initial_capital を取得
+                cur_port = query("SELECT * FROM portfolio ORDER BY date DESC LIMIT 1")
+                if cur_port.empty:
+                    st.error("ポートフォリオが未初期化です。先に軍資金を設定してください。")
+                else:
+                    port_row      = cur_port.iloc[0]
+                    port_id       = int(port_row['id'])
+                    initial_cap   = float(port_row.get('initial_capital', 0) or 0)
+                    deposits      = float(port_row.get('deposits',    0) or 0)
+                    withdrawals   = float(port_row.get('withdrawals', 0) or 0)
+
+                    # 2. 保有中ポジションの投資額を集計
+                    open_pos = query(
+                        "SELECT entry_price, quantity FROM positions "
+                        "WHERE status IN ('holding','open')"
+                    )
+                    invested = float((open_pos['entry_price'] * open_pos['quantity']).sum()) \
+                               if not open_pos.empty else 0.0
+
+                    # 3. 決済済みポジションの確定損益を集計
+                    closed_pos = query(
+                        "SELECT realized_pnl FROM positions WHERE status='closed'"
+                    )
+                    total_gains = float(closed_pos['realized_pnl'].sum()) \
+                                  if not closed_pos.empty else 0.0
+
+                    # 4. 総資産・余力を再計算
+                    #    総資産 = 初期軍資金 + 入金 − 出金 + 確定損益
+                    #    余力   = 総資産 − 投資中金額
+                    current_capital = initial_cap + deposits - withdrawals + total_gains
+                    available_cash  = max(0.0, current_capital - invested)
+
+                    execute(
+                        "UPDATE portfolio SET "
+                        "  available_cash=?, invested_stocks=?, "
+                        "  current_capital=?, total_gains=?, date=? "
+                        "WHERE id=?",
+                        (available_cash, invested, current_capital, total_gains, today, port_id)
+                    )
+                    st.cache_data.clear()
+                    st.success(
+                        f"✅ 再計算完了\n\n"
+                        f"- 投資中: ¥{invested:,.0f}\n"
+                        f"- 余力: ¥{available_cash:,.0f}\n"
+                        f"- 総資産: ¥{current_capital:,.0f}\n"
+                        f"- 累計損益: ¥{total_gains:,.0f}"
+                    )
+            except Exception as e:
+                st.error(f"再計算中にエラーが発生しました: {e}")
+
     st.markdown('<div class="sec-head">データベース</div>', unsafe_allow_html=True)
     with st.container(border=True):
         if is_cloud():
